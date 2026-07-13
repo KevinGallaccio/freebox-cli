@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+# Bootstraps uv and runs the fbx CLI straight from the repo — the contributor
+# path (and the one Kevin uses while building). No install step needed.
+set -e
+command -v uv >/dev/null 2>&1 || {
+  echo "fbx needs uv. Install it with:" >&2
+  echo "  curl -LsSf https://astral.sh/uv/install.sh | sh" >&2
+  exit 1
+}
+exec uv run --project "$(dirname "$0")" fbx "$@"

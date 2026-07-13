@@ -1,0 +1,133 @@
+"""The `fbx` Typer application: global options, error mapping, command wiring."""
+
+from __future__ import annotations
+
+import logging
+from contextlib import contextmanager
+
+import typer
+
+from .. import __version__
+from ..core import redaction
+from ..core.errors import (
+    FbxAuthError,
+    FbxDiscoveryError,
+    FbxError,
+    FbxNotAuthenticated,
+    FbxPermissionError,
+)
+from . import ui
+from .commands import api as api_cmd
+from .commands import auth as auth_cmd
+from .commands import system as system_cmd
+
+app = typer.Typer(
+    name="fbx",
+    help="Freebox Ultra CLI — manage your box, your network, and your VMs.",
+    no_args_is_help=True,
+    add_completion=False,
+    rich_markup_mode="rich",
+)
+
+
+# Exit codes: distinct per failure class so scripts can branch on them.
+EXIT_GENERIC = 1
+EXIT_AUTH = 2
+EXIT_NOT_AUTHENTICATED = 3
+EXIT_PERMISSION = 4
+EXIT_UNREACHABLE = 5
+
+
+@contextmanager
+def handle_errors():
+    """Map core errors to a stderr message + a meaningful exit code."""
+    try:
+        yield
+    except FbxNotAuthenticated as exc:
+        ui.error(str(exc))
+        raise typer.Exit(EXIT_NOT_AUTHENTICATED) from exc
+    except FbxPermissionError as exc:
+        ui.error(
+            f"{exc}. Grant it in Freebox OS → Paramètres → Gestion des accès "
+            "→ Applications → fbx."
+        )
+        raise typer.Exit(EXIT_PERMISSION) from exc
+    except FbxAuthError as exc:
+        ui.error(str(exc))
+        raise typer.Exit(EXIT_AUTH) from exc
+    except FbxDiscoveryError as exc:
+        ui.error(f"can't reach the box: {exc}")
+        raise typer.Exit(EXIT_UNREACHABLE) from exc
+    except FbxError as exc:
+        ui.error(str(exc))
+        raise typer.Exit(EXIT_GENERIC) from exc
+
+
+def _version_callback(value: bool) -> None:
+    if value:
+        # A version string is data, but --version is a UI affordance; stderr
+        # keeps stdout clean. Print plainly.
+        ui.err.print(f"fbx {__version__}")
+        raise typer.Exit()
+
+
+@app.callback()
+def main_callback(
+    ctx: typer.Context,
+    profile: str = typer.Option(
+        "default", "--profile", "-p", help="Named box profile.", show_default=False
+    ),
+    output: ui.OutputFormat = typer.Option(
+        ui.OutputFormat.TABLE, "--output", "-o", help="Output format for data."
+    ),
+    json_: bool = typer.Option(
+        False, "--json", help="Shorthand for --output json (whole result object)."
+    ),
+    host: str | None = typer.Option(
+        None, "--host", help="Override the box hostname/IP.", show_default=False
+    ),
+    quiet: bool = typer.Option(False, "--quiet", "-q", help="Suppress status messages."),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Verbose logging (stderr)."),
+    no_color: bool = typer.Option(False, "--no-color", help="Disable colored output."),
+    _version: bool = typer.Option(
+        False, "--version", callback=_version_callback, is_eager=True, help="Show version."
+    ),
+) -> None:
+    """Global options, applied before any subcommand."""
+    state = ui.CliState(
+        profile=profile,
+        output=output,
+        json=json_,
+        quiet=quiet,
+        verbose=verbose,
+        host=host,
+    )
+    ctx.obj = state
+
+    if no_color:
+        ui.out.no_color = True
+        ui.err.no_color = True
+
+    # Logging goes to stderr and is redacted from the first line. Quiet still
+    # allows warnings; verbose drops to DEBUG.
+    level = logging.DEBUG if verbose else logging.WARNING
+    handler = logging.StreamHandler()  # stderr
+    root = logging.getLogger("fbx")
+    root.handlers.clear()
+    root.addHandler(handler)
+    root.setLevel(level)
+    redaction.install(root)
+
+
+app.add_typer(auth_cmd.app, name="auth")
+system_cmd.register(app)
+api_cmd.register(app)
+
+
+def main() -> None:
+    """Console-script entry point."""
+    app()
+
+
+if __name__ == "__main__":
+    main()
