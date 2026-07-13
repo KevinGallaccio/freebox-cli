@@ -1,0 +1,2065 @@
+{
+  "source": "on-box docs http://mafreebox.freebox.fr/doc/index.html",
+  "api_version": "16.0",
+  "endpoint_count": 343,
+  "endpoints": [
+    {
+      "method": "POST",
+      "path": "/api/v8/login/authorize/",
+      "section": "Login",
+      "anchor": "post--api-v8-login-authorize-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/login/authorize/{track_id}",
+      "section": "Login",
+      "anchor": "get--api-v8-login-authorize-track_id"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/login/",
+      "section": "Login",
+      "anchor": "get--api-v8-login-"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v8/login/session/",
+      "section": "Login",
+      "anchor": "post--api-v8-login-session-"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v8/login/logout/",
+      "section": "Login",
+      "anchor": "post--api-v8-login-logout-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/ws/event",
+      "section": "WebSocket event API",
+      "anchor": "get--api-v8-ws-event"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/airmedia/config/",
+      "section": "Air Media",
+      "anchor": "get--api-v8-airmedia-config-"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v8/airmedia/config/",
+      "section": "Air Media",
+      "anchor": "put--api-v8-airmedia-config-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/airmedia/receivers/",
+      "section": "Air Media",
+      "anchor": "get--api-v8-airmedia-receivers-"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v8/airmedia/receviers/{receiver_name}/",
+      "section": "Air Media",
+      "anchor": "post--api-v8-airmedia-receviers-receiver_name-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v10/call/log/",
+      "section": "Calls / Contacts",
+      "anchor": "get--api-v10-call-log-"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v10/call/log/delete_all/",
+      "section": "Calls / Contacts",
+      "anchor": "post--api-v10-call-log-delete_all-"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v10/call/log/mark_all_as_read/",
+      "section": "Calls / Contacts",
+      "anchor": "post--api-v10-call-log-mark_all_as_read-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v10/call/log/{id}",
+      "section": "Calls / Contacts",
+      "anchor": "get--api-v10-call-log-id"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v10/call/log/{id}",
+      "section": "Calls / Contacts",
+      "anchor": "delete--api-v10-call-log-id"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v10/call/log/{id}",
+      "section": "Calls / Contacts",
+      "anchor": "put--api-v10-call-log-id"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v10/call/account",
+      "section": "Calls / Contacts",
+      "anchor": "get--api-v10-call-account"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v10/call/voicemail/",
+      "section": "Calls / Contacts",
+      "anchor": "get--api-v10-call-voicemail-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v10/call/voicemail/{id}",
+      "section": "Calls / Contacts",
+      "anchor": "get--api-v10-call-voicemail-id"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v10/call/voicemail/{id}",
+      "section": "Calls / Contacts",
+      "anchor": "delete--api-v10-call-voicemail-id"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v10/call/voicemail/{id}",
+      "section": "Calls / Contacts",
+      "anchor": "put--api-v10-call-voicemail-id"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v10/call/voicemail/{id}/audio_file",
+      "section": "Calls / Contacts",
+      "anchor": "get--api-v10-call-voicemail-id-audio_file"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/contact/",
+      "section": "Calls / Contacts",
+      "anchor": "get--api-v8-contact-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/contact/{id}",
+      "section": "Calls / Contacts",
+      "anchor": "get--api-v8-contact-id"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v8/contact/",
+      "section": "Calls / Contacts",
+      "anchor": "post--api-v8-contact-"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v8/contact/{id}",
+      "section": "Calls / Contacts",
+      "anchor": "delete--api-v8-contact-id"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v8/contact/{id}",
+      "section": "Calls / Contacts",
+      "anchor": "put--api-v8-contact-id"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/contact/{contact_id}/[numbers|addresses|urls|emails]/",
+      "section": "Calls / Contacts",
+      "anchor": "get--api-v8-contact-contact_id-[numbers|addresses|urls|emails]-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/[number,address,url,email]/{id}",
+      "section": "Calls / Contacts",
+      "anchor": "get--api-v8-[number,address,url,email]-id"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v8/[number,address,url,email]/",
+      "section": "Calls / Contacts",
+      "anchor": "post--api-v8-[number,address,url,email]-"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v8/[number,address,url,email]/{id}",
+      "section": "Calls / Contacts",
+      "anchor": "delete--api-v8-[number,address,url,email]-id"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v8/[number,address,url,email]/{id}",
+      "section": "Calls / Contacts",
+      "anchor": "put--api-v8-[number,address,url,email]-id"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v11/connection/",
+      "section": "Configuration",
+      "anchor": "get--api-v11-connection-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v11/connection/config/",
+      "section": "Configuration",
+      "anchor": "get--api-v11-connection-config-"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v11/connection/config/",
+      "section": "Configuration",
+      "anchor": "put--api-v11-connection-config-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v11/connection/ipv6/config/",
+      "section": "Configuration",
+      "anchor": "get--api-v11-connection-ipv6-config-"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v11/connection/ipv6/config/",
+      "section": "Configuration",
+      "anchor": "put--api-v11-connection-ipv6-config-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v11/connection/xdsl/",
+      "section": "Configuration",
+      "anchor": "get--api-v11-connection-xdsl-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v11/connection/lte/{id}",
+      "section": "Configuration",
+      "anchor": "get--api-v11-connection-lte-id"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v11/connection/aggregation",
+      "section": "Configuration",
+      "anchor": "get--api-v11-connection-aggregation"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v11/connection/aggregation",
+      "section": "Configuration",
+      "anchor": "put--api-v11-connection-aggregation"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v11/connection/ftth/",
+      "section": "Configuration",
+      "anchor": "get--api-v11-connection-ftth-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v11/connection/ddns/{provider}/status/",
+      "section": "Configuration",
+      "anchor": "get--api-v11-connection-ddns-provider-status-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v11/connection/ddns/{provider}/",
+      "section": "Configuration",
+      "anchor": "get--api-v11-connection-ddns-provider-"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v11/connection/ddns/{provider}/",
+      "section": "Configuration",
+      "anchor": "put--api-v11-connection-ddns-provider-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/lan/config/",
+      "section": "Configuration",
+      "anchor": "get--api-v8-lan-config-"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v8/lan/config/",
+      "section": "Configuration",
+      "anchor": "put--api-v8-lan-config-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v16/lan/routes",
+      "section": "Configuration",
+      "anchor": "get--api-v16-lan-routes"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v16/lan/routes/",
+      "section": "Configuration",
+      "anchor": "put--api-v16-lan-routes-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/lan/browser/interfaces/",
+      "section": "Configuration",
+      "anchor": "get--api-v8-lan-browser-interfaces-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v16/lan/browser/{interface}/",
+      "section": "Configuration",
+      "anchor": "get--api-v16-lan-browser-interface-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v16/lan/browser/{interface}/{hostid}/",
+      "section": "Configuration",
+      "anchor": "get--api-v16-lan-browser-interface-hostid-"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v16/lan/browser/{interface}/{hostid}/",
+      "section": "Configuration",
+      "anchor": "put--api-v16-lan-browser-interface-hostid-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/lan/browser/types/",
+      "section": "Configuration",
+      "anchor": "get--api-v8-lan-browser-types-"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v8/lan/wol/{interface}/",
+      "section": "Configuration",
+      "anchor": "post--api-v8-lan-wol-interface-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/freeplug/",
+      "section": "Configuration",
+      "anchor": "get--api-v8-freeplug-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/freeplug/{id}/",
+      "section": "Configuration",
+      "anchor": "get--api-v8-freeplug-id-"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v8/freeplug/{id}/reset/",
+      "section": "Configuration",
+      "anchor": "post--api-v8-freeplug-id-reset-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v16/dhcp/config/",
+      "section": "Configuration",
+      "anchor": "get--api-v16-dhcp-config-"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v16/dhcp/config/",
+      "section": "Configuration",
+      "anchor": "put--api-v16-dhcp-config-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v16/dhcp/static_lease/",
+      "section": "Configuration",
+      "anchor": "get--api-v16-dhcp-static_lease-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v16/dhcp/static_lease/{id}",
+      "section": "Configuration",
+      "anchor": "get--api-v16-dhcp-static_lease-id"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v16/dhcp/static_lease/{id}",
+      "section": "Configuration",
+      "anchor": "put--api-v16-dhcp-static_lease-id"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v8/dhcp/static_lease/{id}",
+      "section": "Configuration",
+      "anchor": "delete--api-v8-dhcp-static_lease-id"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v16/dhcp/static_lease/",
+      "section": "Configuration",
+      "anchor": "post--api-v16-dhcp-static_lease-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v16/dhcp/dynamic_lease/",
+      "section": "Configuration",
+      "anchor": "get--api-v16-dhcp-dynamic_lease-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/dhcpv6/config/",
+      "section": "Configuration",
+      "anchor": "get--api-v8-dhcpv6-config-"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v8/dhcpv6/config/",
+      "section": "Configuration",
+      "anchor": "put--api-v8-dhcpv6-config-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/ftp/config/",
+      "section": "Configuration",
+      "anchor": "get--api-v8-ftp-config-"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v8/ftp/config/",
+      "section": "Configuration",
+      "anchor": "put--api-v8-ftp-config-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v16/tftp/config/",
+      "section": "Configuration",
+      "anchor": "get--api-v16-tftp-config-"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/latest/tftp/config/",
+      "section": "Configuration",
+      "anchor": "put--api-latest-tftp-config-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/fw/dmz/",
+      "section": "Configuration",
+      "anchor": "get--api-v8-fw-dmz-"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v8/fw/dmz/",
+      "section": "Configuration",
+      "anchor": "put--api-v8-fw-dmz-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/fw/redir/",
+      "section": "Configuration",
+      "anchor": "get--api-v8-fw-redir-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/fw/redir/{redir_id}",
+      "section": "Configuration",
+      "anchor": "get--api-v8-fw-redir-redir_id"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v8/fw/redir/{redir_id}",
+      "section": "Configuration",
+      "anchor": "put--api-v8-fw-redir-redir_id"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v8/fw/redir/",
+      "section": "Configuration",
+      "anchor": "post--api-v8-fw-redir-"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v8/fw/redir/{redir_id}",
+      "section": "Configuration",
+      "anchor": "delete--api-v8-fw-redir-redir_id"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/fw/incoming/",
+      "section": "Configuration",
+      "anchor": "get--api-v8-fw-incoming-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/fw/incoming/{port_id}",
+      "section": "Configuration",
+      "anchor": "get--api-v8-fw-incoming-port_id"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v8/fw/incoming/{port_id}",
+      "section": "Configuration",
+      "anchor": "put--api-v8-fw-incoming-port_id"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/upnpigd/config/",
+      "section": "Configuration",
+      "anchor": "get--api-v8-upnpigd-config-"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v8/upnpigd/config/",
+      "section": "Configuration",
+      "anchor": "put--api-v8-upnpigd-config-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/upnpigd/redir/",
+      "section": "Configuration",
+      "anchor": "get--api-v8-upnpigd-redir-"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v8/upnpigd/redir/{id}",
+      "section": "Configuration",
+      "anchor": "delete--api-v8-upnpigd-redir-id"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/lcd/config/",
+      "section": "Configuration",
+      "anchor": "get--api-v8-lcd-config-"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v8/lcd/config/",
+      "section": "Configuration",
+      "anchor": "put--api-v8-lcd-config-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v16/ledstrip/status",
+      "section": "Configuration",
+      "anchor": "get--api-v16-ledstrip-status"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v16/ledstrip/planning",
+      "section": "Configuration",
+      "anchor": "put--api-v16-ledstrip-planning"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/netshare/samba/",
+      "section": "Configuration",
+      "anchor": "get--api-v8-netshare-samba-"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v8/netshare/samba/",
+      "section": "Configuration",
+      "anchor": "put--api-v8-netshare-samba-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/netshare/afp/",
+      "section": "Configuration",
+      "anchor": "get--api-v8-netshare-afp-"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v8/netshare/afp/",
+      "section": "Configuration",
+      "anchor": "put--api-v8-netshare-afp-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/upnpav/config/",
+      "section": "Configuration",
+      "anchor": "get--api-v8-upnpav-config-"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v8/upnpav/config/",
+      "section": "Configuration",
+      "anchor": "put--api-v8-upnpav-config-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/switch/status/",
+      "section": "Configuration",
+      "anchor": "get--api-v8-switch-status-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/switch/port/{id}",
+      "section": "Configuration",
+      "anchor": "get--api-v8-switch-port-id"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v8/switch/port/{id}",
+      "section": "Configuration",
+      "anchor": "put--api-v8-switch-port-id"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/switch/port/{id}/stats",
+      "section": "Configuration",
+      "anchor": "get--api-v8-switch-port-id-stats"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v9/wifi/config/",
+      "section": "Configuration",
+      "anchor": "get--api-v9-wifi-config-"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v9/wifi/config/",
+      "section": "Configuration",
+      "anchor": "put--api-v9-wifi-config-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v16/wifi/steering/config/",
+      "section": "Configuration",
+      "anchor": "get--api-v16-wifi-steering-config-"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v16/wifi/steering/config/",
+      "section": "Configuration",
+      "anchor": "put--api-v16-wifi-steering-config-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v10/wifi/state/",
+      "section": "Configuration",
+      "anchor": "get--api-v10-wifi-state-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v9/wifi/ap/",
+      "section": "Configuration",
+      "anchor": "get--api-v9-wifi-ap-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v9/wifi/ap/{id}",
+      "section": "Configuration",
+      "anchor": "get--api-v9-wifi-ap-id"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v9/wifi/ap/{id}",
+      "section": "Configuration",
+      "anchor": "put--api-v9-wifi-ap-id"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v9/wifi/ap/{id}/allowed_channel_comb",
+      "section": "Configuration",
+      "anchor": "get--api-v9-wifi-ap-id-allowed_channel_comb"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v9/wifi/ap/{id}/stations/",
+      "section": "Configuration",
+      "anchor": "get--api-v9-wifi-ap-id-stations-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v9/wifi/ap/{id}/stations/{mac}",
+      "section": "Configuration",
+      "anchor": "get--api-v9-wifi-ap-id-stations-mac"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v9/wifi/ap/{id}/channel_survey_history/{timestamp}",
+      "section": "Configuration",
+      "anchor": "get--api-v9-wifi-ap-id-channel_survey_history-timestamp"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v9/wifi/ap/{id}/restart",
+      "section": "Configuration",
+      "anchor": "post--api-v9-wifi-ap-id-restart"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v9/wifi/bss/",
+      "section": "Configuration",
+      "anchor": "get--api-v9-wifi-bss-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v9/wifi/bss/{id}",
+      "section": "Configuration",
+      "anchor": "get--api-v9-wifi-bss-id"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v9/wifi/bss/{id}",
+      "section": "Configuration",
+      "anchor": "put--api-v9-wifi-bss-id"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v9/wifi/ap/{id}/neighbors/",
+      "section": "Configuration",
+      "anchor": "get--api-v9-wifi-ap-id-neighbors-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v9/wifi/ap/{id}/channel_usage/",
+      "section": "Configuration",
+      "anchor": "get--api-v9-wifi-ap-id-channel_usage-"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v9/wifi/ap/{id}/neighbors/scan",
+      "section": "Configuration",
+      "anchor": "post--api-v9-wifi-ap-id-neighbors-scan"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v9/wifi/planning/",
+      "section": "Configuration",
+      "anchor": "get--api-v9-wifi-planning-"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v9/wifi/planning/",
+      "section": "Configuration",
+      "anchor": "put--api-v9-wifi-planning-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v9/wifi/mac_filter/",
+      "section": "Configuration",
+      "anchor": "get--api-v9-wifi-mac_filter-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v9/wifi/mac_filter/{filter_id}",
+      "section": "Configuration",
+      "anchor": "get--api-v9-wifi-mac_filter-filter_id"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v9/wifi/mac_filter/{filter_id}",
+      "section": "Configuration",
+      "anchor": "put--api-v9-wifi-mac_filter-filter_id"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v9/wifi/mac_filter/{filter_id}",
+      "section": "Configuration",
+      "anchor": "delete--api-v9-wifi-mac_filter-filter_id"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v9/wifi/mac_filter/",
+      "section": "Configuration",
+      "anchor": "post--api-v9-wifi-mac_filter-"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v9/wifi/config/reset/",
+      "section": "Configuration",
+      "anchor": "post--api-v9-wifi-config-reset-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v9/wifi/ap/{id}/default",
+      "section": "Configuration",
+      "anchor": "get--api-v9-wifi-ap-id-default"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v9/wifi/bss/{id}/default",
+      "section": "Configuration",
+      "anchor": "get--api-v9-wifi-bss-id-default"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v9/wifi/default",
+      "section": "Configuration",
+      "anchor": "get--api-v9-wifi-default"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v9/wifi/diag",
+      "section": "Configuration",
+      "anchor": "get--api-v9-wifi-diag"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v9/wifi/diag",
+      "section": "Configuration",
+      "anchor": "post--api-v9-wifi-diag"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v9/wifi/ap/{id}/diag &amp; /api/v9/wifi/bss/{id}/diag",
+      "section": "Configuration",
+      "anchor": "get--api-v9-wifi-ap-id-diag &amp; -api-v9-wifi-bss-id-diag"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v9/wifi/ap/{id}/diag &amp; /api/v9/wifi/bss/{id}/diag",
+      "section": "Configuration",
+      "anchor": "post--api-v9-wifi-ap-id-diag &amp; -api-v9-wifi-bss-id-diag"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v9/wifi/wps/config/",
+      "section": "Configuration",
+      "anchor": "get--api-v9-wifi-wps-config-"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v9/wifi/wps/config/",
+      "section": "Configuration",
+      "anchor": "put--api-v9-wifi-wps-config-"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v9/wifi/wps/start/",
+      "section": "Configuration",
+      "anchor": "post--api-v9-wifi-wps-start-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v9/wifi/wps/sessions/",
+      "section": "Configuration",
+      "anchor": "get--api-v9-wifi-wps-sessions-"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v9/wifi/wps/sessions/",
+      "section": "Configuration",
+      "anchor": "delete--api-v9-wifi-wps-sessions-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v14/wifi/custom_keys/config/",
+      "section": "Configuration",
+      "anchor": "get--api-v14-wifi-custom_keys-config-"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v14/wifi/custom_keys/config/",
+      "section": "Configuration",
+      "anchor": "put--api-v14-wifi-custom_keys-config-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v9/wifi/custom_key/",
+      "section": "Configuration",
+      "anchor": "get--api-v9-wifi-custom_key-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v9/wifi/custom_key/{key_id}",
+      "section": "Configuration",
+      "anchor": "get--api-v9-wifi-custom_key-key_id"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v9/wifi/custom_key/{key_id}",
+      "section": "Configuration",
+      "anchor": "delete--api-v9-wifi-custom_key-key_id"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v9/wifi/custom_key/",
+      "section": "Configuration",
+      "anchor": "post--api-v9-wifi-custom_key-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v13/wifi/temp_disable",
+      "section": "Configuration",
+      "anchor": "get--api-v13-wifi-temp_disable"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v13/wifi/temp_disable",
+      "section": "Configuration",
+      "anchor": "post--api-v13-wifi-temp_disable"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v14/wifi/bss/{id}/mlo/allowed_comb",
+      "section": "Configuration",
+      "anchor": "get--api-v14-wifi-bss-id-mlo-allowed_comb"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v14/wifi/bss/{id}/mlo/config",
+      "section": "Configuration",
+      "anchor": "get--api-v14-wifi-bss-id-mlo-config"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v9/wifi/config/",
+      "section": "Configuration",
+      "anchor": "put--api-v9-wifi-config-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/system/",
+      "section": "Configuration",
+      "anchor": "get--api-v8-system-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/system/",
+      "section": "Configuration",
+      "anchor": "get--api-v8-system-"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v8/system/reboot/",
+      "section": "Configuration",
+      "anchor": "post--api-v8-system-reboot-"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v11/system/shutdown/",
+      "section": "Configuration",
+      "anchor": "post--api-v11-system-shutdown-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/vpn/",
+      "section": "Configuration",
+      "anchor": "get--api-v8-vpn-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/vpn/{vpn_id}/config/",
+      "section": "Configuration",
+      "anchor": "get--api-v8-vpn-vpn_id-config-"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v8/vpn/openvpn_routed/config/",
+      "section": "Configuration",
+      "anchor": "put--api-v8-vpn-openvpn_routed-config-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/vpn/user/",
+      "section": "Configuration",
+      "anchor": "get--api-v8-vpn-user-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/vpn/user/{login}",
+      "section": "Configuration",
+      "anchor": "get--api-v8-vpn-user-login"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v8/vpn/user/",
+      "section": "Configuration",
+      "anchor": "post--api-v8-vpn-user-"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v8/vpn/user/{login}",
+      "section": "Configuration",
+      "anchor": "delete--api-v8-vpn-user-login"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v8/vpn/user/{login}",
+      "section": "Configuration",
+      "anchor": "put--api-v8-vpn-user-login"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/vpn/ip_pool/",
+      "section": "Configuration",
+      "anchor": "get--api-v8-vpn-ip_pool-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/vpn/connection/",
+      "section": "Configuration",
+      "anchor": "get--api-v8-vpn-connection-"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v8/vpn/connection/{id}",
+      "section": "Configuration",
+      "anchor": "delete--api-v8-vpn-connection-id"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/vpn/download_config/{server_name}/{login}/{fmt}",
+      "section": "Configuration",
+      "anchor": "get--api-v8-vpn-download_config-server_name-login-fmt"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/vpn_client/config/",
+      "section": "Configuration",
+      "anchor": "get--api-v8-vpn_client-config-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/vpn_client/config/{id}",
+      "section": "Configuration",
+      "anchor": "get--api-v8-vpn_client-config-id"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v8/vpn_client/config/",
+      "section": "Configuration",
+      "anchor": "post--api-v8-vpn_client-config-"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v8/vpn_client/config/{id}",
+      "section": "Configuration",
+      "anchor": "delete--api-v8-vpn_client-config-id"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v8/vpn_client/config/{id}",
+      "section": "Configuration",
+      "anchor": "put--api-v8-vpn_client-config-id"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/vpn_client/status",
+      "section": "Configuration",
+      "anchor": "get--api-v8-vpn_client-status"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/vpn_client/log",
+      "section": "Configuration",
+      "anchor": "get--api-v8-vpn_client-log"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/downloads/",
+      "section": "Downloads",
+      "anchor": "get--api-v8-downloads-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/downloads/{id}",
+      "section": "Downloads",
+      "anchor": "get--api-v8-downloads-id"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v8/downloads/{id}",
+      "section": "Downloads",
+      "anchor": "delete--api-v8-downloads-id"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v8/downloads/{id}/erase",
+      "section": "Downloads",
+      "anchor": "delete--api-v8-downloads-id-erase"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v8/downloads/{id}",
+      "section": "Downloads",
+      "anchor": "put--api-v8-downloads-id"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/downloads/{id}/log",
+      "section": "Downloads",
+      "anchor": "get--api-v8-downloads-id-log"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v8/downloads/add",
+      "section": "Downloads",
+      "anchor": "post--api-v8-downloads-add"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v8/downloads/add",
+      "section": "Downloads",
+      "anchor": "post--api-v8-downloads-add"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/downloads/stats",
+      "section": "Downloads",
+      "anchor": "get--api-v8-downloads-stats"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/downloads/{task_id}/files",
+      "section": "Downloads",
+      "anchor": "get--api-v8-downloads-task_id-files"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v8/downloads/{task_id}/files/{file_id}",
+      "section": "Downloads",
+      "anchor": "put--api-v8-downloads-task_id-files-file_id"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/downloads/{task_id}/trackers",
+      "section": "Downloads",
+      "anchor": "get--api-v8-downloads-task_id-trackers"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v8/downloads/{task_id}/trackers",
+      "section": "Downloads",
+      "anchor": "post--api-v8-downloads-task_id-trackers"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v8/downloads/{task_id}/trackers/{announce}",
+      "section": "Downloads",
+      "anchor": "delete--api-v8-downloads-task_id-trackers-announce"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v8/downloads/{task_id}/trackers/{announce}",
+      "section": "Downloads",
+      "anchor": "put--api-v8-downloads-task_id-trackers-announce"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/downloads/{task_id}/peers",
+      "section": "Downloads",
+      "anchor": "get--api-v8-downloads-task_id-peers"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/downloads/{task_id}/pieces",
+      "section": "Downloads",
+      "anchor": "get--api-v8-downloads-task_id-pieces"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/downloads/{task_id}/blacklist",
+      "section": "Downloads",
+      "anchor": "get--api-v8-downloads-task_id-blacklist"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v8/downloads/{task_id}/blacklist/empty",
+      "section": "Downloads",
+      "anchor": "delete--api-v8-downloads-task_id-blacklist-empty"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v8/downloads/blacklist/{host}",
+      "section": "Downloads",
+      "anchor": "delete--api-v8-downloads-blacklist-host"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v8/downloads/blacklist",
+      "section": "Downloads",
+      "anchor": "post--api-v8-downloads-blacklist"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/downloads/feeds/",
+      "section": "Downloads",
+      "anchor": "get--api-v8-downloads-feeds-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/downloads/feeds/{id}",
+      "section": "Downloads",
+      "anchor": "get--api-v8-downloads-feeds-id"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v8/downloads/feeds/",
+      "section": "Downloads",
+      "anchor": "post--api-v8-downloads-feeds-"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v8/downloads/feeds/{id}",
+      "section": "Downloads",
+      "anchor": "delete--api-v8-downloads-feeds-id"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v8/downloads/feeds/{id}",
+      "section": "Downloads",
+      "anchor": "put--api-v8-downloads-feeds-id"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v8/downloads/feeds/{id}/fetch",
+      "section": "Downloads",
+      "anchor": "post--api-v8-downloads-feeds-id-fetch"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v8/downloads/feeds/fetch",
+      "section": "Downloads",
+      "anchor": "post--api-v8-downloads-feeds-fetch"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/downloads/feeds/{feed_id}/items/",
+      "section": "Downloads",
+      "anchor": "get--api-v8-downloads-feeds-feed_id-items-"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v8/downloads/feeds/{feed_id}/items/{item_id}",
+      "section": "Downloads",
+      "anchor": "put--api-v8-downloads-feeds-feed_id-items-item_id"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v8/downloads/feeds/{feed_id}/items/{item_id}/download",
+      "section": "Downloads",
+      "anchor": "post--api-v8-downloads-feeds-feed_id-items-item_id-download"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v8/downloads/feeds/{feed_id}/items/mark_all_as_read",
+      "section": "Downloads",
+      "anchor": "post--api-v8-downloads-feeds-feed_id-items-mark_all_as_read"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/downloads/config/",
+      "section": "Downloads",
+      "anchor": "get--api-v8-downloads-config-"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v8/downloads/config/",
+      "section": "Downloads",
+      "anchor": "put--api-v8-downloads-config-"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v8/downloads/throttling",
+      "section": "Downloads",
+      "anchor": "put--api-v8-downloads-throttling"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v15/fs/tasks/",
+      "section": "File System Api",
+      "anchor": "get--api-v15-fs-tasks-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v15/fs/tasks/{id}",
+      "section": "File System Api",
+      "anchor": "get--api-v15-fs-tasks-id"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v15/fs/tasks/{id}",
+      "section": "File System Api",
+      "anchor": "delete--api-v15-fs-tasks-id"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v15/fs/tasks/{id}",
+      "section": "File System Api",
+      "anchor": "put--api-v15-fs-tasks-id"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v15/fs/ls/{path}",
+      "section": "File System Api",
+      "anchor": "get--api-v15-fs-ls-path"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v15/fs/info/{path}",
+      "section": "File System Api",
+      "anchor": "get--api-v15-fs-info-path"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v15/fs/info",
+      "section": "File System Api",
+      "anchor": "post--api-v15-fs-info"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v15/fs/mv/",
+      "section": "File System Api",
+      "anchor": "post--api-v15-fs-mv-"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v15/fs/cp/",
+      "section": "File System Api",
+      "anchor": "post--api-v15-fs-cp-"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v15/fs/rm/",
+      "section": "File System Api",
+      "anchor": "post--api-v15-fs-rm-"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v15/fs/cat/",
+      "section": "File System Api",
+      "anchor": "post--api-v15-fs-cat-"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v15/fs/archive/",
+      "section": "File System Api",
+      "anchor": "post--api-v15-fs-archive-"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v15/fs/extract/",
+      "section": "File System Api",
+      "anchor": "post--api-v15-fs-extract-"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v15/fs/repair/",
+      "section": "File System Api",
+      "anchor": "post--api-v15-fs-repair-"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v15/fs/hash/",
+      "section": "File System Api",
+      "anchor": "post--api-v15-fs-hash-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v15/fs/tasks/{id}/hash",
+      "section": "File System Api",
+      "anchor": "get--api-v15-fs-tasks-id-hash"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v15/fs/mkdir/",
+      "section": "File System Api",
+      "anchor": "post--api-v15-fs-mkdir-"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v15/fs/rename/",
+      "section": "File System Api",
+      "anchor": "post--api-v15-fs-rename-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v15/dl/{path}",
+      "section": "File System Api",
+      "anchor": "get--api-v15-dl-path"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/share_link/",
+      "section": "File System Api",
+      "anchor": "get--api-v8-share_link-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/share_link/{token}",
+      "section": "File System Api",
+      "anchor": "get--api-v8-share_link-token"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v8/share_link/{token}",
+      "section": "File System Api",
+      "anchor": "delete--api-v8-share_link-token"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v8/share_link/",
+      "section": "File System Api",
+      "anchor": "post--api-v8-share_link-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/ws/upload",
+      "section": "File System Api",
+      "anchor": "get--api-v8-ws-upload"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/upload/",
+      "section": "File System Api",
+      "anchor": "get--api-v8-upload-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/upload/{id}",
+      "section": "File System Api",
+      "anchor": "get--api-v8-upload-id"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v8/upload/{id}/cancel",
+      "section": "File System Api",
+      "anchor": "delete--api-v8-upload-id-cancel"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v8/upload/{id}",
+      "section": "File System Api",
+      "anchor": "delete--api-v8-upload-id"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/home/adapters",
+      "section": "Home",
+      "anchor": "get--api-v8-home-adapters"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/home/adapters/{id}",
+      "section": "Home",
+      "anchor": "get--api-v8-home-adapters-id"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v8/home/adapters/{id}",
+      "section": "Home",
+      "anchor": "put--api-v8-home-adapters-id"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v8/home/pairing/{adapter_id}",
+      "section": "Home",
+      "anchor": "post--api-v8-home-pairing-adapter_id"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/home/pairing/{adapter_id}",
+      "section": "Home",
+      "anchor": "get--api-v8-home-pairing-adapter_id"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v8/home/pairing/{adapter_id}",
+      "section": "Home",
+      "anchor": "post--api-v8-home-pairing-adapter_id"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v8/home/pairing/{adapter_id}",
+      "section": "Home",
+      "anchor": "post--api-v8-home-pairing-adapter_id"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/home/nodes",
+      "section": "Home",
+      "anchor": "get--api-v8-home-nodes"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/home/nodes/{id}",
+      "section": "Home",
+      "anchor": "get--api-v8-home-nodes-id"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v8/home/nodes/{id}",
+      "section": "Home",
+      "anchor": "put--api-v8-home-nodes-id"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v8/home/nodes/{id}",
+      "section": "Home",
+      "anchor": "delete--api-v8-home-nodes-id"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/home/endpoints/{node_id}/{endpoint_id}",
+      "section": "Home",
+      "anchor": "get--api-v8-home-endpoints-node_id-endpoint_id"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v8/home/endpoints/{node_id}/{endpoint_id}",
+      "section": "Home",
+      "anchor": "put--api-v8-home-endpoints-node_id-endpoint_id"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/home/tileset/all",
+      "section": "Home",
+      "anchor": "get--api-v8-home-tileset-all"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/home/tileset/{node_id}",
+      "section": "Home",
+      "anchor": "get--api-v8-home-tileset-node_id"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/camera/",
+      "section": "Home",
+      "anchor": "get--api-v8-camera-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/camera/{id}",
+      "section": "Home",
+      "anchor": "get--api-v8-camera-id"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/lang/",
+      "section": "Language",
+      "anchor": "get--api-v8-lang-"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v8/lang/",
+      "section": "Language",
+      "anchor": "post--api-v8-lang-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v11/notif/targets",
+      "section": "Notification",
+      "anchor": "get--api-v11-notif-targets"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v11/notif/targets/{id}",
+      "section": "Notification",
+      "anchor": "get--api-v11-notif-targets-id"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v11/notif/targets/{id}",
+      "section": "Notification",
+      "anchor": "delete--api-v11-notif-targets-id"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v11/notif/targets/{id}",
+      "section": "Notification",
+      "anchor": "put--api-v11-notif-targets-id"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v11/notif/targets/",
+      "section": "Notification",
+      "anchor": "post--api-v11-notif-targets-"
+    },
+    {
+      "method": "POST",
+      "path": "/register",
+      "section": "Notification",
+      "anchor": "post--register"
+    },
+    {
+      "method": "DELETE",
+      "path": "/register/{box_id}/{device_id}",
+      "section": "Notification",
+      "anchor": "delete--register-box_id-device_id"
+    },
+    {
+      "method": "POST",
+      "path": "/send",
+      "section": "Notification",
+      "anchor": "post--send"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/profile",
+      "section": "Parental filter",
+      "anchor": "get--api-v8-profile"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/profile/{id}",
+      "section": "Parental filter",
+      "anchor": "get--api-v8-profile-id"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v8/profile/",
+      "section": "Parental filter",
+      "anchor": "post--api-v8-profile-"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v8/profile/{id}",
+      "section": "Parental filter",
+      "anchor": "delete--api-v8-profile-id"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v8/profile/3",
+      "section": "Parental filter",
+      "anchor": "put--api-v8-profile-3"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/network_control",
+      "section": "Parental filter",
+      "anchor": "get--api-v8-network_control"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/network_control/{profile_id}",
+      "section": "Parental filter",
+      "anchor": "get--api-v8-network_control-profile_id"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v8/network_control/{profile_id}",
+      "section": "Parental filter",
+      "anchor": "put--api-v8-network_control-profile_id"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/network_control/migrate",
+      "section": "Parental filter",
+      "anchor": "get--api-v8-network_control-migrate"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v8/network_control/migrate",
+      "section": "Parental filter",
+      "anchor": "post--api-v8-network_control-migrate"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/network_control/{profile_id}/rules",
+      "section": "Parental filter",
+      "anchor": "get--api-v8-network_control-profile_id-rules"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/network_control/{profile_id}/rules/{rule_id}",
+      "section": "Parental filter",
+      "anchor": "get--api-v8-network_control-profile_id-rules-rule_id"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v8/network_controlr/{profile_id}/rules/",
+      "section": "Parental filter",
+      "anchor": "post--api-v8-network_controlr-profile_id-rules-"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v8/network_control/{id}/rules/{rule_id}",
+      "section": "Parental filter",
+      "anchor": "put--api-v8-network_control-id-rules-rule_id"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v8/network_control/{id}/rules/{rule_id}",
+      "section": "Parental filter",
+      "anchor": "delete--api-v8-network_control-id-rules-rule_id"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/player",
+      "section": "Player devices",
+      "anchor": "get--api-v8-player"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/player/{id_player}/api/v6/status/",
+      "section": "Player devices",
+      "anchor": "get--api-v8-player-id_player-api-v6-status-"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v8/player/{id_player}/api/v6/control/mediactrl/",
+      "section": "Player devices",
+      "anchor": "post--api-v8-player-id_player-api-v6-control-mediactrl-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/player/{id_player}/api/v6/control/volume/",
+      "section": "Player devices",
+      "anchor": "get--api-v8-player-id_player-api-v6-control-volume-"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v8/player/{id_player}/api/v6/control/volume/",
+      "section": "Player devices",
+      "anchor": "put--api-v8-player-id_player-api-v6-control-volume-"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v8/player/{id_player}/api/v6/control/open",
+      "section": "Player devices",
+      "anchor": "post--api-v8-player-id_player-api-v6-control-open"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/pvr/config/",
+      "section": "PVR",
+      "anchor": "get--api-v8-pvr-config-"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v8/pvr/config/",
+      "section": "PVR",
+      "anchor": "put--api-v8-pvr-config-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/pvr/quota/",
+      "section": "PVR",
+      "anchor": "get--api-v8-pvr-quota-"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v8/pvr/quota/",
+      "section": "PVR",
+      "anchor": "put--api-v8-pvr-quota-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/pvr/programmed/",
+      "section": "PVR",
+      "anchor": "get--api-v8-pvr-programmed-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/pvr/programmed/{id}",
+      "section": "PVR",
+      "anchor": "get--api-v8-pvr-programmed-id"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v8/pvr/programmed/{id}",
+      "section": "PVR",
+      "anchor": "put--api-v8-pvr-programmed-id"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v8/pvr/programmed/{id}",
+      "section": "PVR",
+      "anchor": "delete--api-v8-pvr-programmed-id"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v8/pvr/programmed/",
+      "section": "PVR",
+      "anchor": "post--api-v8-pvr-programmed-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/pvr/finished/",
+      "section": "PVR",
+      "anchor": "get--api-v8-pvr-finished-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/pvr/finished/{id}",
+      "section": "PVR",
+      "anchor": "get--api-v8-pvr-finished-id"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v8/pvr/finished/{id}",
+      "section": "PVR",
+      "anchor": "put--api-v8-pvr-finished-id"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v8/pvr/finished/{id}",
+      "section": "PVR",
+      "anchor": "delete--api-v8-pvr-finished-id"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/pvr/media/",
+      "section": "PVR",
+      "anchor": "get--api-v8-pvr-media-"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v8/rrd/",
+      "section": "RRD",
+      "anchor": "post--api-v8-rrd-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/rrd/",
+      "section": "RRD",
+      "anchor": "get--api-v8-rrd-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v11/standby/status",
+      "section": "Standby",
+      "anchor": "get--api-v11-standby-status"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v11/standby/config",
+      "section": "Standby",
+      "anchor": "put--api-v11-standby-config"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/storage/disk/",
+      "section": "Storage",
+      "anchor": "get--api-v8-storage-disk-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/storage/disk/{id}",
+      "section": "Storage",
+      "anchor": "get--api-v8-storage-disk-id"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v8/storage/disk/{id}",
+      "section": "Storage",
+      "anchor": "put--api-v8-storage-disk-id"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/storage/disk/{disk_id}/fsadvice?partition_id={partition_id}&amp;dedicated_disk={bool}",
+      "section": "Storage",
+      "anchor": "get--api-v8-storage-disk-disk_id-fsadvice?partition_id=partition_id&amp;dedicated_disk=bool"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v8/storage/disk/{id}/format/",
+      "section": "Storage",
+      "anchor": "put--api-v8-storage-disk-id-format-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/storage/partition/",
+      "section": "Storage",
+      "anchor": "get--api-v8-storage-partition-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/storage/partition/{id}",
+      "section": "Storage",
+      "anchor": "get--api-v8-storage-partition-id"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v8/storage/partition/{id}",
+      "section": "Storage",
+      "anchor": "put--api-v8-storage-partition-id"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v8/storage/partition/{id}/check/",
+      "section": "Storage",
+      "anchor": "put--api-v8-storage-partition-id-check-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/storage/config/",
+      "section": "Storage",
+      "anchor": "get--api-v8-storage-config-"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v8/storage/config/",
+      "section": "Storage",
+      "anchor": "put--api-v8-storage-config-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/storage/raid/",
+      "section": "Storage",
+      "anchor": "get--api-v8-storage-raid-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/storage/raid/{id}",
+      "section": "Storage",
+      "anchor": "get--api-v8-storage-raid-id"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v8/storage/raid/",
+      "section": "Storage",
+      "anchor": "post--api-v8-storage-raid-"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v8/storage/raid/{id}",
+      "section": "Storage",
+      "anchor": "delete--api-v8-storage-raid-id"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v8/storage/raid/{id}",
+      "section": "Storage",
+      "anchor": "put--api-v8-storage-raid-id"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v8/storage/raid/{id}/forcestart",
+      "section": "Storage",
+      "anchor": "post--api-v8-storage-raid-id-forcestart"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v8/storage/raid/{id}/members/faulty",
+      "section": "Storage",
+      "anchor": "delete--api-v8-storage-raid-id-members-faulty"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v8/storage/raid/{id}/members",
+      "section": "Storage",
+      "anchor": "put--api-v8-storage-raid-id-members"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v8/storage/raid/{id}/members/addspares",
+      "section": "Storage",
+      "anchor": "post--api-v8-storage-raid-id-members-addspares"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v11/sfp/status",
+      "section": "SFP",
+      "anchor": "get--api-v11-sfp-status"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v11/sfp/config",
+      "section": "SFP",
+      "anchor": "put--api-v11-sfp-config"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v11/update/",
+      "section": "Update",
+      "anchor": "get--api-v11-update-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/vm/info/",
+      "section": "Virtual machines",
+      "anchor": "get--api-v8-vm-info-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/vm/distros/",
+      "section": "Virtual machines",
+      "anchor": "get--api-v8-vm-distros-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/vm/",
+      "section": "Virtual machines",
+      "anchor": "get--api-v8-vm-"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/vm/{id}",
+      "section": "Virtual machines",
+      "anchor": "get--api-v8-vm-id"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v8/vm/",
+      "section": "Virtual machines",
+      "anchor": "post--api-v8-vm-"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v8/vm/{id}",
+      "section": "Virtual machines",
+      "anchor": "delete--api-v8-vm-id"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v8/vm/{id}",
+      "section": "Virtual machines",
+      "anchor": "put--api-v8-vm-id"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v8/vm/{id}/start",
+      "section": "Virtual machines",
+      "anchor": "post--api-v8-vm-id-start"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v8/vm/{id}/powerbutton",
+      "section": "Virtual machines",
+      "anchor": "post--api-v8-vm-id-powerbutton"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v8/vm/{id}/stop",
+      "section": "Virtual machines",
+      "anchor": "post--api-v8-vm-id-stop"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v8/vm/{id}/restart",
+      "section": "Virtual machines",
+      "anchor": "post--api-v8-vm-id-restart"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/vm/{id}/console",
+      "section": "Virtual machines",
+      "anchor": "get--api-v8-vm-id-console"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/vm/{id}/vnc",
+      "section": "Virtual machines",
+      "anchor": "get--api-v8-vm-id-vnc"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v8/vm/disk/info",
+      "section": "Virtual machines",
+      "anchor": "post--api-v8-vm-disk-info"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v8/vm/disk/create",
+      "section": "Virtual machines",
+      "anchor": "post--api-v8-vm-disk-create"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v8/vm/disk/resize",
+      "section": "Virtual machines",
+      "anchor": "post--api-v8-vm-disk-resize"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v8/vm/disk/task/{id}",
+      "section": "Virtual machines",
+      "anchor": "get--api-v8-vm-disk-task-id"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v8/vm/disk/task/{id}",
+      "section": "Virtual machines",
+      "anchor": "delete--api-v8-vm-disk-task-id"
+    }
+  ]
+}
