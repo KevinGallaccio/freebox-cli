@@ -8,7 +8,7 @@ import respx
 from typer.testing import CliRunner
 
 from fbx.cli.main import app
-from tests.helpers import authorize, mock_get, mock_login
+from tests.helpers import authorize, mock_get, mock_login, mock_write, sent_json
 
 runner = CliRunner()
 
@@ -79,3 +79,57 @@ def test_empty_log_normalizes():
     result = runner.invoke(app, ["--json", "calls", "list"])
     assert result.exit_code == 0
     assert json.loads(result.stdout) == []
+
+
+# -- writes ----------------------------------------------------------------
+
+
+@respx.mock
+def test_mark_read_puts_new_false():
+    authorize()
+    mock_login()
+    route = mock_write("put", "call/log/", startswith=True, result={"id": 10, "new": False})
+    result = runner.invoke(app, ["calls", "mark-read", "10"])
+    assert result.exit_code == 0
+    assert sent_json(route) == {"new": False}
+
+
+@respx.mock
+def test_mark_all_read_posts():
+    authorize()
+    mock_login()
+    route = mock_write("post", "call/log/mark_all_as_read/", envelope={"success": True})
+    result = runner.invoke(app, ["calls", "mark-all-read"])
+    assert result.exit_code == 0
+    assert route.called
+
+
+@respx.mock
+def test_rm_deletes_entry():
+    authorize()
+    mock_login()
+    route = mock_write("delete", "call/log/10", envelope={"success": True})
+    result = runner.invoke(app, ["calls", "rm", "10"])
+    assert result.exit_code == 0
+    assert route.called
+
+
+@respx.mock
+def test_clear_confirms_then_deletes_all():
+    authorize()
+    mock_login()
+    route = mock_write("post", "call/log/delete_all/", envelope={"success": True})
+    declined = runner.invoke(app, ["calls", "clear"], input="n\n")
+    assert declined.exit_code != 0
+    assert not route.called
+    result = runner.invoke(app, ["calls", "clear", "--yes"])
+    assert result.exit_code == 0
+    assert route.called
+
+
+@respx.mock
+def test_calls_write_needs_calls_permission():
+    authorize()
+    mock_login(permissions={"calls": False})
+    result = runner.invoke(app, ["calls", "rm", "10"])
+    assert result.exit_code == 4

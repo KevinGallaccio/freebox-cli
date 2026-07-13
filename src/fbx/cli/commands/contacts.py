@@ -23,6 +23,67 @@ def list_(ctx: typer.Context) -> None:
     ui.emit(data, ctx.obj, table=_contacts_table)
 
 
+# -- writes ----------------------------------------------------------------
+
+
+@app.command()
+def add(
+    ctx: typer.Context,
+    display_name: str = typer.Argument(..., help="Display name."),
+    first: str | None = typer.Option(None, "--first", help="First name."),
+    last: str | None = typer.Option(None, "--last", help="Last name."),
+    company: str | None = typer.Option(None, "--company", help="Company."),
+) -> None:
+    """Create a contact."""
+    fields: dict = {"display_name": display_name}
+    if first is not None:
+        fields["first_name"] = first
+    if last is not None:
+        fields["last_name"] = last
+    if company is not None:
+        fields["company"] = company
+    data = fetch(ctx, api.create, fields)
+    ui.emit_write(data, ctx.obj, message=f"created contact {display_name!r}")
+
+
+@app.command()
+def edit(
+    ctx: typer.Context,
+    contact_id: int = typer.Argument(..., help="Contact id (see `fbx contacts list`)."),
+    display_name: str | None = typer.Option(None, "--display-name", help="Display name."),
+    first: str | None = typer.Option(None, "--first", help="First name."),
+    last: str | None = typer.Option(None, "--last", help="Last name."),
+    company: str | None = typer.Option(None, "--company", help="Company."),
+    notes: str | None = typer.Option(None, "--notes", help="Notes."),
+) -> None:
+    """Edit a contact."""
+    fields: dict = {}
+    for key, value in (
+        ("display_name", display_name),
+        ("first_name", first),
+        ("last_name", last),
+        ("company", company),
+        ("notes", notes),
+    ):
+        if value is not None:
+            fields[key] = value
+    if not fields:
+        ui.error("nothing to change: pass at least one option (see --help).")
+        raise typer.Exit(1)
+    data = fetch(ctx, api.update, contact_id, fields)
+    ui.emit_write(data, ctx.obj, message=f"updated contact {contact_id}")
+
+
+@app.command()
+def rm(
+    ctx: typer.Context,
+    contact_id: int = typer.Argument(..., help="Contact id (see `fbx contacts list`)."),
+) -> None:
+    """Delete a contact."""
+    data = fetch(ctx, api.delete, contact_id)
+    ui.emit_write(data, ctx.obj, message=f"deleted contact {contact_id}")
+
+
 def _contacts_table(items: list) -> Table:
     t = Table(box=None, title=f"Contacts — {len(items)}")
     t.add_column("ID", justify="right")

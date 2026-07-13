@@ -31,3 +31,18 @@ def ftth(client: Any) -> dict:
     """GET /connection/ftth/ — FTTH/SFP optical-module telemetry
     (undocumented upstream; power values are hundredths of a dBm)."""
     return client.get("connection/ftth/")
+
+
+# -- writes (all gated by the `settings` permission) -----------------------
+
+
+def set_config(client: Any, fields: dict) -> dict:
+    """PUT /connection/config/ — remote-access & WAN options (partial body)."""
+    client.require_permission("settings")
+    return client.put("connection/config/", data=fields)
+
+
+def set_ipv6_config(client: Any, fields: dict) -> dict:
+    """PUT /connection/ipv6/config/ — IPv6 enablement & firewall (partial body)."""
+    client.require_permission("settings")
+    return client.put("connection/ipv6/config/", data=fields)

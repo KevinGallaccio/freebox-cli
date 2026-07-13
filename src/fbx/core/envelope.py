@@ -56,17 +56,33 @@ def call(
     path: str = "",
     json: Any = None,
     params: dict | None = None,
+    form: dict | None = None,
+    files: Any = None,
 ) -> Any:
     """Send a request and return the unwrapped `result`, with typed errors only.
 
     Wraps every transport-level httpx failure (connect/read/timeout/protocol)
     into `FbxHTTPError` so no raw httpx exception ever escapes the core into the
     CLI. Envelope failures still surface as `FbxAPIError` from `unwrap`.
+
+    Body encoding is mutually exclusive: `form` sends
+    `application/x-www-form-urlencoded`, `files` sends `multipart/form-data`
+    (both used by `POST /downloads/add`), otherwise `json` sends a JSON body.
+    httpx rejects mixing `json=` with `data=`/`files=`, so we pick exactly one.
     """
     method = method.upper()
     label = path or url
+    kwargs: dict[str, Any] = {"params": params}
+    if files is not None:
+        kwargs["files"] = files
+        if form is not None:
+            kwargs["data"] = form
+    elif form is not None:
+        kwargs["data"] = form
+    else:
+        kwargs["json"] = json
     try:
-        resp = http.request(method, url, json=json, params=params)
+        resp = http.request(method, url, **kwargs)
     except httpx.HTTPError as exc:
         raise FbxHTTPError(f"could not reach the box ({method} {label}): {exc}") from exc
     return unwrap(resp, method=method, path=label)

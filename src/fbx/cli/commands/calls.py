@@ -23,6 +23,47 @@ def list_(ctx: typer.Context) -> None:
     ui.emit(data, ctx.obj, table=_log_table)
 
 
+# -- writes ----------------------------------------------------------------
+
+
+@app.command("mark-read")
+def mark_read(
+    ctx: typer.Context,
+    call_id: int = typer.Argument(..., help="Call-log entry id."),
+) -> None:
+    """Mark one call-log entry as read."""
+    data = fetch(ctx, api.mark_read, call_id)
+    ui.emit_write(data, ctx.obj, message=f"marked call {call_id} as read")
+
+
+@app.command("mark-all-read")
+def mark_all_read(ctx: typer.Context) -> None:
+    """Mark every call-log entry as read."""
+    data = fetch(ctx, api.mark_all_read)
+    ui.emit_write(data, ctx.obj, message="marked all calls as read")
+
+
+@app.command()
+def rm(
+    ctx: typer.Context,
+    call_id: int = typer.Argument(..., help="Call-log entry id."),
+) -> None:
+    """Delete one call-log entry."""
+    data = fetch(ctx, api.delete_entry, call_id)
+    ui.emit_write(data, ctx.obj, message=f"deleted call {call_id}")
+
+
+@app.command()
+def clear(
+    ctx: typer.Context,
+    yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation."),
+) -> None:
+    """Delete the entire call log."""
+    ui.confirm("Delete the ENTIRE call log? This cannot be undone.", yes=yes)
+    data = fetch(ctx, api.delete_all)
+    ui.emit_write(data, ctx.obj, message="cleared the call log")
+
+
 _TYPE_STYLE = {"missed": "red", "accepted": "green", "outgoing": "cyan"}
 
 

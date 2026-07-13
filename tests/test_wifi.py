@@ -8,7 +8,7 @@ import respx
 from typer.testing import CliRunner
 
 from fbx.cli.main import app
-from tests.helpers import authorize, mock_get, mock_login
+from tests.helpers import authorize, mock_get, mock_login, mock_write, sent_json
 
 runner = CliRunner()
 
@@ -221,3 +221,146 @@ def test_stations_single_ap_option():
     assert route.called
     assert not ap_route.called  # direct fetch — no AP walk
     assert json.loads(result.stdout) == [STATION_AP11]
+
+
+# -- writes ----------------------------------------------------------------
+
+
+@respx.mock
+def test_mac_filter_list_empty():
+    authorize()
+    mock_login()
+    mock_get("wifi/mac_filter/", envelope={"success": True})
+    result = runner.invoke(app, ["--json", "wifi", "mac-filter"])
+    assert result.exit_code == 0
+    assert json.loads(result.stdout) == []
+
+
+@respx.mock
+def test_config_set_disable_requires_confirmation():
+    authorize()
+    mock_login()
+    route = mock_write("put", "wifi/config/", result={"enabled": False})
+    # Declining at the prompt aborts before any request is sent.
+    result = runner.invoke(app, ["wifi", "config-set", "--disabled"], input="n\n")
+    assert result.exit_code != 0
+    assert not route.called
+
+
+@respx.mock
+def test_config_set_disable_yes_bypasses_prompt():
+    authorize()
+    mock_login()
+    route = mock_write("put", "wifi/config/", result={"enabled": False})
+    result = runner.invoke(app, ["wifi", "config-set", "--disabled", "--yes"])
+    assert result.exit_code == 0
+    assert sent_json(route) == {"enabled": False}
+
+
+@respx.mock
+def test_config_set_enable_needs_no_confirmation():
+    authorize()
+    mock_login()
+    route = mock_write("put", "wifi/config/", result={"enabled": True})
+    result = runner.invoke(app, ["wifi", "config-set", "--enabled"])
+    assert result.exit_code == 0
+    assert sent_json(route) == {"enabled": True}
+
+
+@respx.mock
+def test_config_set_mac_filter_state():
+    authorize()
+    mock_login()
+    route = mock_write("put", "wifi/config/", result={})
+    result = runner.invoke(app, ["wifi", "config-set", "--mac-filter", "whitelist"])
+    assert result.exit_code == 0
+    assert sent_json(route) == {"mac_filter_state": "whitelist"}
+
+
+@respx.mock
+def test_ap_set_wraps_config():
+    authorize()
+    mock_login()
+    route = mock_write("put", "wifi/ap/", startswith=True, result={"id": 0})
+    result = runner.invoke(app, ["wifi", "ap-set", "0", "--channel", "36", "--channel-width", "80"])
+    assert result.exit_code == 0
+    assert sent_json(route) == {"config": {"primary_channel": 36, "channel_width": "80"}}
+
+
+@respx.mock
+def test_bss_set_wraps_config_key():
+    authorize()
+    mock_login()
+    route = mock_write("put", "wifi/bss/", startswith=True, result={"id": "x"})
+    result = runner.invoke(app, ["wifi", "bss-set", "02:00:00:00:00:10", "--key", "s3cret"])
+    assert result.exit_code == 0
+    assert sent_json(route) == {"config": {"key": "s3cret"}}
+
+
+@respx.mock
+def test_mac_filter_add_posts_fields():
+    authorize()
+    mock_login()
+    # Live, the box returns id == "<mac>-<type>", NOT the bare MAC the docs show.
+    route = mock_write("post", "wifi/mac_filter/", result={"id": "02:00:00:00:00:99-blacklist"})
+    result = runner.invoke(
+        app, ["wifi", "mac-filter-add", "02:00:00:00:00:99", "--type", "blacklist", "-c", "guest"]
+    )
+    assert result.exit_code == 0
+    assert sent_json(route) == {
+        "mac": "02:00:00:00:00:99",
+        "type": "blacklist",
+        "comment": "guest",
+    }
+
+
+@respx.mock
+def test_mac_filter_rm():
+    authorize()
+    mock_login()
+    route = mock_write(
+        "delete", "wifi/mac_filter/", startswith=True, envelope={"success": True}
+    )
+    result = runner.invoke(app, ["wifi", "mac-filter-rm", "02:00:00:00:00:99"])
+    assert result.exit_code == 0
+    assert route.called
+
+
+@respx.mock
+def test_temp_disable_with_keep_skips_confirmation():
+    authorize()
+    mock_login()
+    route = mock_write("post", "wifi/temp_disable", envelope={"success": True})
+    result = runner.invoke(app, ["wifi", "temp-disable", "--duration", "600", "--keep", "2d4g"])
+    assert result.exit_code == 0
+    assert sent_json(route) == {"duration": 600, "keep": "2d4g"}
+
+
+@respx.mock
+def test_temp_disable_all_bands_confirms():
+    authorize()
+    mock_login()
+    route = mock_write("post", "wifi/temp_disable", envelope={"success": True})
+    result = runner.invoke(app, ["wifi", "temp-disable", "--duration", "600"], input="n\n")
+    assert result.exit_code != 0
+    assert not route.called
+
+
+@respx.mock
+def test_wps_start_posts_bssid():
+    authorize()
+    mock_login()
+    route = mock_write("post", "wifi/wps/start/", result=1)
+    result = runner.invoke(app, ["wifi", "wps-start", "02:00:00:00:00:10"])
+    assert result.exit_code == 0
+    assert sent_json(route) == {"bssid": "02:00:00:00:00:10"}
+
+
+@respx.mock
+def test_wps_stop_deletes_sessions():
+    authorize()
+    mock_login()
+    route = mock_write("delete", "wifi/wps/sessions/", envelope={"success": True})
+    result = runner.invoke(app, ["wifi", "wps-stop"])
+    assert result.exit_code == 0
+    assert route.called

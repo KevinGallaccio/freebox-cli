@@ -8,7 +8,7 @@ import respx
 from typer.testing import CliRunner
 
 from fbx.cli.main import app
-from tests.helpers import authorize, mock_get, mock_login
+from tests.helpers import authorize, mock_get, mock_login, mock_write, sent_json
 
 runner = CliRunner()
 
@@ -149,3 +149,63 @@ def test_config_table_shows_mode():
     assert result.exit_code == 0
     assert "router" in result.stdout
     assert "192.168.1.254" in result.stdout
+
+
+# -- writes ----------------------------------------------------------------
+
+
+@respx.mock
+def test_wol_posts_mac_and_password():
+    authorize()
+    mock_login()
+    route = mock_write("post", "lan/wol/pub/", envelope={"success": True})
+    result = runner.invoke(app, ["wol", "02:00:00:00:00:0a"])
+    assert result.exit_code == 0
+    assert sent_json(route) == {"mac": "02:00:00:00:00:0a", "password": ""}
+
+
+@respx.mock
+def test_wol_honors_interface_option():
+    authorize()
+    mock_login()
+    route = mock_write("post", "lan/wol/eth0/", envelope={"success": True})
+    result = runner.invoke(app, ["wol", "02:00:00:00:00:0a", "-i", "eth0"])
+    assert result.exit_code == 0
+    assert route.called
+
+
+@respx.mock
+def test_rename_puts_primary_name_with_echoed_id():
+    authorize()
+    mock_login()
+    route = mock_write("put", "lan/browser/pub/", startswith=True, result={"ok": True})
+    result = runner.invoke(
+        app, ["lan", "rename", "ether-02:00:00:00:00:0a", "Living Room TV"]
+    )
+    assert result.exit_code == 0
+    assert sent_json(route) == {
+        "id": "ether-02:00:00:00:00:0a",
+        "primary_name": "Living Room TV",
+    }
+
+
+@respx.mock
+def test_set_type_puts_host_type():
+    authorize()
+    mock_login()
+    route = mock_write("put", "lan/browser/pub/", startswith=True, result={"ok": True})
+    result = runner.invoke(
+        app, ["lan", "set-type", "ether-02:00:00:00:00:0a", "workstation"]
+    )
+    assert result.exit_code == 0
+    assert sent_json(route)["host_type"] == "workstation"
+
+
+@respx.mock
+def test_lan_config_set_sends_only_changed_fields():
+    authorize()
+    mock_login()
+    route = mock_write("put", "lan/config/", result={"mode": "router"})
+    result = runner.invoke(app, ["lan", "config-set", "--name", "Home Box"])
+    assert result.exit_code == 0
+    assert sent_json(route) == {"name": "Home Box"}

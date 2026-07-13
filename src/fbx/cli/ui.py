@@ -15,6 +15,7 @@ from collections.abc import Callable
 from enum import Enum
 from typing import Any
 
+import typer
 from rich.console import Console
 from rich.table import Table
 
@@ -91,3 +92,33 @@ def emit(
 def emit_json(data: Any) -> None:
     # Compact-but-readable, and never re-colorized (stdout may be a pipe).
     out.print_json(json.dumps(data, ensure_ascii=False, default=str))
+
+
+def emit_write(data: Any, state: CliState, *, message: str | None = None) -> None:
+    """Report a mutation: friendly line on stderr, response object on stdout.
+
+    Writes have no table, so the response is always emitted as JSON (satisfies
+    `--json` on every write). The box answers a bodiless mutation with a bare
+    `{"success": true}` (unwrapped to `None`); we echo that shape so a script
+    piping stdout always gets a truthy JSON object, never `null`.
+    """
+    if message and not state.quiet:
+        success(message)
+    emit_json(data if data is not None else {"success": True})
+
+
+# -- confirmation (stderr prompt; --yes bypasses) -------------------------
+
+
+def confirm(prompt: str, *, yes: bool) -> None:
+    """Gate a destructive op behind a y/N prompt on stderr.
+
+    `--yes` bypasses it. Declining — or a non-interactive stdin (EOF), so an
+    agent that forgot `--yes` can't hang — raises `typer.Abort` (exit 1, prints
+    "Aborted." to stderr). The prompt itself goes to stderr (`err=True`) to keep
+    stdout clean for data.
+    """
+    if yes:
+        return
+    if not typer.confirm(prompt, err=True):
+        raise typer.Abort()

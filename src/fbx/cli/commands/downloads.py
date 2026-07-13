@@ -30,6 +30,133 @@ def stats(ctx: typer.Context) -> None:
     ui.emit(data, ctx.obj, table=_stats_table)
 
 
+# -- writes ----------------------------------------------------------------
+
+
+@app.command()
+def add(
+    ctx: typer.Context,
+    url: str = typer.Argument(..., help="Download URL or magnet link."),
+    dir_: str | None = typer.Option(None, "--dir", help="Destination directory (absolute path)."),
+    filename: str | None = typer.Option(None, "--filename", help="Override the saved name."),
+    hash_: str | None = typer.Option(None, "--hash", help="sha256:… / sha512:… to verify."),
+    username: str | None = typer.Option(None, "--user", help="HTTP auth username."),
+    password: str | None = typer.Option(None, "--password", help="HTTP auth password."),
+    recursive: bool = typer.Option(False, "--recursive", help="Recursive download."),
+    archive_password: str | None = typer.Option(
+        None, "--archive-password", help="Password to extract (nzb)."
+    ),
+    cookies: str | None = typer.Option(None, "--cookies", help="HTTP Cookie header value."),
+) -> None:
+    """Add a download from a URL or magnet link."""
+    data = fetch(
+        ctx,
+        api.add_url,
+        url=url,
+        download_dir=dir_,
+        filename=filename,
+        hash=hash_,
+        username=username,
+        password=password,
+        recursive=recursive if recursive else None,
+        archive_password=archive_password,
+        cookies=cookies,
+    )
+    ui.emit_write(data, ctx.obj, message="download queued")
+
+
+@app.command("add-file")
+def add_file(
+    ctx: typer.Context,
+    path: str = typer.Argument(..., help="Local .torrent or .nzb file to upload."),
+    dir_: str | None = typer.Option(None, "--dir", help="Destination directory (absolute path)."),
+    archive_password: str | None = typer.Option(
+        None, "--archive-password", help="Password to extract (nzb)."
+    ),
+) -> None:
+    """Add a download from a local .torrent/.nzb file."""
+    data = fetch(ctx, api.add_file, path, download_dir=dir_, archive_password=archive_password)
+    ui.emit_write(data, ctx.obj, message="download queued")
+
+
+@app.command()
+def pause(
+    ctx: typer.Context,
+    task_id: int = typer.Argument(..., help="Download task id."),
+) -> None:
+    """Pause a download task."""
+    data = fetch(ctx, api.update_task, task_id, {"status": "stopped"})
+    ui.emit_write(data, ctx.obj, message=f"paused task {task_id}")
+
+
+@app.command()
+def resume(
+    ctx: typer.Context,
+    task_id: int = typer.Argument(..., help="Download task id."),
+) -> None:
+    """Resume a paused download task."""
+    data = fetch(ctx, api.update_task, task_id, {"status": "downloading"})
+    ui.emit_write(data, ctx.obj, message=f"resumed task {task_id}")
+
+
+@app.command()
+def priority(
+    ctx: typer.Context,
+    task_id: int = typer.Argument(..., help="Download task id."),
+    level: str = typer.Argument(..., help="I/O priority: low, normal, or high."),
+) -> None:
+    """Set a download task's I/O priority."""
+    data = fetch(ctx, api.update_task, task_id, {"io_priority": level})
+    ui.emit_write(data, ctx.obj, message=f"set task {task_id} priority to {level}")
+
+
+@app.command()
+def rm(
+    ctx: typer.Context,
+    task_id: int = typer.Argument(..., help="Download task id."),
+) -> None:
+    """Remove a download task, keeping the downloaded files."""
+    data = fetch(ctx, api.delete_task, task_id)
+    ui.emit_write(data, ctx.obj, message=f"removed task {task_id} (files kept)")
+
+
+@app.command()
+def erase(
+    ctx: typer.Context,
+    task_id: int = typer.Argument(..., help="Download task id."),
+    yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation."),
+) -> None:
+    """Remove a download task AND erase its downloaded files."""
+    ui.confirm(
+        f"Erase task {task_id} and DELETE its downloaded files? This cannot be undone.",
+        yes=yes,
+    )
+    data = fetch(ctx, api.erase_task, task_id)
+    ui.emit_write(data, ctx.obj, message=f"erased task {task_id} and its files")
+
+
+@app.command()
+def throttle(
+    ctx: typer.Context,
+    mode: str = typer.Argument(..., help="Throttling profile: normal, slow, or schedule."),
+) -> None:
+    """Switch the download throttling profile."""
+    data = fetch(ctx, api.set_throttling, mode)
+    ui.emit_write(data, ctx.obj, message=f"throttling → {mode}")
+
+
+@app.command("file-priority")
+def file_priority(
+    ctx: typer.Context,
+    task_id: int = typer.Argument(..., help="Download task id."),
+    file_id: str = typer.Argument(..., help="File id (e.g. 1-1; see the task's files)."),
+    level: str = typer.Argument(..., help="Priority: no_dl, low, normal, or high."),
+) -> None:
+    """Set the priority of one file within a task."""
+    data = fetch(ctx, api.set_file_priority, task_id, file_id, level)
+    ui.emit_write(data, ctx.obj, message=f"set file {file_id} priority to {level}")
+
+
 _STATUS_STYLE = {"done": "green", "downloading": "cyan", "seeding": "cyan", "error": "red"}
 
 

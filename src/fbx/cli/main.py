@@ -26,6 +26,7 @@ from .commands import contacts as contacts_cmd
 from .commands import dhcp as dhcp_cmd
 from .commands import downloads as downloads_cmd
 from .commands import fs as fs_cmd
+from .commands import fw as fw_cmd
 from .commands import lan as lan_cmd
 from .commands import storage as storage_cmd
 from .commands import system as system_cmd
@@ -141,6 +142,7 @@ contacts_cmd.register(app)
 dhcp_cmd.register(app)
 downloads_cmd.register(app)
 fs_cmd.register(app)
+fw_cmd.register(app)
 lan_cmd.register(app)
 storage_cmd.register(app)
 wifi_cmd.register(app)

@@ -18,6 +18,16 @@ from fbx.core import credentials
 
 BASE = "http://mafreebox.freebox.fr/api/v16/"
 
+# The real app token holds all 14 scopes (verified live); mirror that so write
+# commands, which pre-check `require_permission`, aren't blocked in tests.
+ALL_PERMISSIONS = {
+    scope: True
+    for scope in (
+        "settings", "contacts", "calls", "explorer", "downloader", "parental",
+        "pvr", "vm", "tv", "wdo", "home", "camera", "player", "profile",
+    )
+}
+
 
 def authorize() -> None:
     """Store a fake credential so `connect()` finds a profile.
@@ -39,8 +49,14 @@ def authorize() -> None:
     )
 
 
-def mock_login() -> None:
-    """Mock discovery + session so any data command can authenticate."""
+def mock_login(permissions: dict | None = None) -> None:
+    """Mock discovery + session so any data command can authenticate.
+
+    The session's permission map defaults to all-granted (see `ALL_PERMISSIONS`)
+    so write commands' `require_permission` pre-check passes; pass an explicit
+    `permissions` dict to exercise the missing-permission path.
+    """
+    perms = ALL_PERMISSIONS if permissions is None else permissions
     respx.get("http://mafreebox.freebox.fr/api_version").mock(
         return_value=httpx.Response(
             200,
@@ -53,7 +69,7 @@ def mock_login() -> None:
     respx.post(f"{BASE}login/session/").mock(
         return_value=httpx.Response(
             200,
-            json={"success": True, "result": {"session_token": "S1", "permissions": {}}},
+            json={"success": True, "result": {"session_token": "S1", "permissions": perms}},
         )
     )
 
@@ -75,3 +91,43 @@ def mock_get(
     url = f"{BASE}{path}"
     route = respx.get(url__startswith=url) if startswith else respx.get(url)
     return route.mock(return_value=httpx.Response(200, json=body))
+
+
+def mock_write(
+    method: str,
+    path: str,
+    result: Any = None,
+    *,
+    envelope: dict | None = None,
+    startswith: bool = False,
+    status: int = 200,
+) -> respx.Route:
+    """Mock a POST/PUT/DELETE at `{BASE}{path}` and return the route.
+
+    Assert the request body the CLI sent via `sent_json(route)` — for writes,
+    the *request* body is the contract, not just the response. `envelope`
+    overrides the whole response body; `startswith` matches by URL prefix (for
+    `{id}`/base64 path segments).
+    """
+    body = envelope if envelope is not None else {"success": True, "result": result}
+    url = f"{BASE}{path}"
+    verb = getattr(respx, method.lower())
+    route = verb(url__startswith=url) if startswith else verb(url)
+    return route.mock(return_value=httpx.Response(status, json=body))
+
+
+def sent_json(route: respx.Route) -> Any:
+    """The JSON body of the last request that matched `route`."""
+    import json
+
+    return json.loads(route.calls.last.request.content)
+
+
+def sent_form(route: respx.Route) -> dict:
+    """The form-encoded body of the last request that matched `route`.
+
+    Single-valued fields are flattened (`parse_qs` returns lists)."""
+    from urllib.parse import parse_qs
+
+    raw = parse_qs(route.calls.last.request.content.decode())
+    return {k: v[0] if len(v) == 1 else v for k, v in raw.items()}

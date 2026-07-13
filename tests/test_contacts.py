@@ -8,7 +8,7 @@ import respx
 from typer.testing import CliRunner
 
 from fbx.cli.main import app
-from tests.helpers import authorize, mock_get, mock_login
+from tests.helpers import authorize, mock_get, mock_login, mock_write, sent_json
 
 runner = CliRunner()
 
@@ -55,3 +55,50 @@ def test_list_table_shows_contact():
     assert "person-1" in result.stdout
     assert "ACME" in result.stdout
     assert "+3310000001" in result.stdout
+
+
+# -- writes ----------------------------------------------------------------
+
+
+@respx.mock
+def test_add_posts_fields():
+    authorize()
+    mock_login()
+    route = mock_write("post", "contact/", result={"id": 10, "display_name": "Sandy Kilo"})
+    result = runner.invoke(
+        app, ["contacts", "add", "Sandy Kilo", "--first", "Sandy", "--last", "Kilo"]
+    )
+    assert result.exit_code == 0
+    assert sent_json(route) == {
+        "display_name": "Sandy Kilo",
+        "first_name": "Sandy",
+        "last_name": "Kilo",
+    }
+
+
+@respx.mock
+def test_edit_puts_partial():
+    authorize()
+    mock_login()
+    route = mock_write("put", "contact/", startswith=True, result={"id": 4})
+    result = runner.invoke(app, ["contacts", "edit", "4", "--company", "Freebox"])
+    assert result.exit_code == 0
+    assert sent_json(route) == {"company": "Freebox"}
+
+
+@respx.mock
+def test_rm_deletes():
+    authorize()
+    mock_login()
+    route = mock_write("delete", "contact/4", envelope={"success": True})
+    result = runner.invoke(app, ["contacts", "rm", "4"])
+    assert result.exit_code == 0
+    assert route.called
+
+
+@respx.mock
+def test_contacts_write_needs_contacts_permission():
+    authorize()
+    mock_login(permissions={"contacts": False})
+    result = runner.invoke(app, ["contacts", "add", "X"])
+    assert result.exit_code == 4

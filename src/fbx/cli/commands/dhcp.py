@@ -37,6 +37,83 @@ def config(ctx: typer.Context) -> None:
     ui.emit(data, ctx.obj, table=_config_table)
 
 
+@app.command("static-add")
+def static_add(
+    ctx: typer.Context,
+    mac: str = typer.Argument(..., help="Device MAC to reserve for."),
+    ip: str = typer.Argument(..., help="IPv4 to pin to that MAC."),
+    comment: str | None = typer.Option(None, "--comment", "-c", help="Reservation note."),
+) -> None:
+    """Add a static (reserved) DHCP lease."""
+    data = fetch(ctx, api.create_static_lease, mac=mac, ip=ip, comment=comment)
+    ui.emit_write(data, ctx.obj, message=f"reserved {ip} for {mac}")
+
+
+@app.command("static-edit")
+def static_edit(
+    ctx: typer.Context,
+    lease_id: str = typer.Argument(..., help="Lease id (the reserved MAC)."),
+    ip: str | None = typer.Option(None, "--ip", help="New reserved IPv4."),
+    comment: str | None = typer.Option(None, "--comment", "-c", help="New note."),
+) -> None:
+    """Edit a static DHCP lease (its IP and/or comment)."""
+    fields: dict = {}
+    if ip is not None:
+        fields["ip"] = ip
+    if comment is not None:
+        fields["comment"] = comment
+    if not fields:
+        ui.error("nothing to change: pass --ip and/or --comment.")
+        raise typer.Exit(1)
+    data = fetch(ctx, api.update_static_lease, lease_id, fields)
+    ui.emit_write(data, ctx.obj, message=f"updated static lease {lease_id}")
+
+
+@app.command("static-rm")
+def static_rm(
+    ctx: typer.Context,
+    lease_id: str = typer.Argument(..., help="Lease id (the reserved MAC)."),
+) -> None:
+    """Delete a static DHCP lease."""
+    data = fetch(ctx, api.delete_static_lease, lease_id)
+    ui.emit_write(data, ctx.obj, message=f"deleted static lease {lease_id}")
+
+
+@app.command("config-set")
+def config_set(
+    ctx: typer.Context,
+    enabled: bool | None = typer.Option(
+        None, "--enabled/--disabled", help="Enable/disable the DHCP server."
+    ),
+    gateway: str | None = typer.Option(None, "--gateway", help="Gateway IPv4."),
+    netmask: str | None = typer.Option(None, "--netmask", help="Subnet mask."),
+    ip_range_start: str | None = typer.Option(None, "--range-start", help="Pool start IPv4."),
+    ip_range_end: str | None = typer.Option(None, "--range-end", help="Pool end IPv4."),
+    dns: list[str] | None = typer.Option(
+        None, "--dns", help="DNS server (repeatable; replaces the list)."
+    ),
+) -> None:
+    """Update the DHCP server configuration."""
+    fields: dict = {}
+    if enabled is not None:
+        fields["enabled"] = enabled
+    if gateway is not None:
+        fields["gateway"] = gateway
+    if netmask is not None:
+        fields["netmask"] = netmask
+    if ip_range_start is not None:
+        fields["ip_range_start"] = ip_range_start
+    if ip_range_end is not None:
+        fields["ip_range_end"] = ip_range_end
+    if dns is not None:
+        fields["dns"] = dns
+    if not fields:
+        ui.error("nothing to change: pass at least one option (see --help).")
+        raise typer.Exit(1)
+    data = fetch(ctx, api.set_config, fields)
+    ui.emit_write(data, ctx.obj, message="updated DHCP config")
+
+
 def _leases_table(items: list) -> Table:
     t = Table(box=None, title=f"DHCP leases — {len(items)}")
     t.add_column("Hostname")

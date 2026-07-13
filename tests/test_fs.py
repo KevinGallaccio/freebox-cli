@@ -9,7 +9,8 @@ import respx
 from typer.testing import CliRunner
 
 from fbx.cli.main import app
-from tests.helpers import BASE, authorize, mock_get, mock_login
+from fbx.core import fspath
+from tests.helpers import BASE, authorize, mock_get, mock_login, mock_write, sent_json
 
 runner = CliRunner()
 
@@ -124,3 +125,155 @@ def test_ls_bracketed_path_argument_does_not_break_the_title():
 def test_ls_route_prefix_sanity():
     # The startswith mock above must not accidentally cover other endpoints.
     assert f"{BASE}fs/ls/".startswith(BASE)
+
+
+# -- writes ----------------------------------------------------------------
+
+
+@respx.mock
+def test_mkdir_encodes_parent_keeps_name_plain():
+    authorize()
+    mock_login()
+    route = mock_write("post", "fs/mkdir/", result="L0ZyZWVib3gvZGly")
+    result = runner.invoke(app, ["fs", "mkdir", "/Freebox", "newdir"])
+    assert result.exit_code == 0
+    assert sent_json(route) == {"parent": fspath.encode("/Freebox"), "dirname": "newdir"}
+
+
+@respx.mock
+def test_rename_encodes_src_keeps_dst_plain():
+    authorize()
+    mock_login()
+    route = mock_write("post", "fs/rename/", envelope={"success": True})
+    result = runner.invoke(app, ["fs", "rename", "/Freebox/old.txt", "new.txt"])
+    assert result.exit_code == 0
+    assert sent_json(route) == {"src": fspath.encode("/Freebox/old.txt"), "dst": "new.txt"}
+
+
+@respx.mock
+def test_rm_confirms_then_submits_and_polls_done():
+    authorize()
+    mock_login()
+    # submit returns a task; the poll's first read is already terminal (done).
+    route = mock_write("post", "fs/rm/", result={"id": 12, "state": "running"})
+    mock_get("fs/tasks/12", {"id": 12, "state": "done", "error": "none"})
+    # decline first — nothing submitted
+    declined = runner.invoke(app, ["fs", "rm", "/Freebox/x"], input="n\n")
+    assert declined.exit_code != 0
+    assert not route.called
+    # then confirm
+    result = runner.invoke(app, ["fs", "rm", "/Freebox/x", "--yes"])
+    assert result.exit_code == 0
+    assert sent_json(route) == {"files": [fspath.encode("/Freebox/x")]}
+
+
+@respx.mock
+def test_rm_failed_task_exits_1():
+    authorize()
+    mock_login()
+    mock_write("post", "fs/rm/", result={"id": 13, "state": "running"})
+    mock_get("fs/tasks/13", {"id": 13, "state": "failed", "error": "erase_failed"})
+    result = runner.invoke(app, ["fs", "rm", "/Freebox/x", "--yes"])
+    assert result.exit_code == 1
+
+
+@respx.mock
+def test_mv_no_wait_returns_task_immediately():
+    authorize()
+    mock_login()
+    route = mock_write("post", "fs/mv/", result={"id": 14, "state": "running"})
+    result = runner.invoke(
+        app, ["--json", "fs", "mv", "/Freebox/a", "/Freebox/b", "--to", "/Freebox/dst", "--no-wait"]
+    )
+    assert result.exit_code == 0
+    body = sent_json(route)
+    assert body["files"] == [fspath.encode("/Freebox/a"), fspath.encode("/Freebox/b")]
+    assert body["dst"] == fspath.encode("/Freebox/dst")
+    assert body["mode"] == "overwrite"
+    assert json.loads(result.stdout)["id"] == 14
+
+
+@respx.mock
+def test_cp_custom_mode():
+    authorize()
+    mock_login()
+    route = mock_write("post", "fs/cp/", result={"id": 15, "state": "done", "error": "none"})
+    mock_get("fs/tasks/15", {"id": 15, "state": "done", "error": "none"})
+    result = runner.invoke(
+        app, ["fs", "cp", "/Freebox/a", "--to", "/Freebox/dst", "--mode", "both"]
+    )
+    assert result.exit_code == 0
+    assert sent_json(route)["mode"] == "both"
+
+
+# -- share links -----------------------------------------------------------
+
+
+@respx.mock
+def test_share_create_encodes_path_never_expiry():
+    authorize()
+    mock_login()
+    route = mock_write("post", "share_link/", result={"token": "abc", "name": "x"})
+    result = runner.invoke(app, ["fs", "share", "/Freebox/x"])
+    assert result.exit_code == 0
+    body = sent_json(route)
+    assert body["path"] == fspath.encode("/Freebox/x")
+    assert body["expire"] == 0  # no --days → never expires
+
+
+@respx.mock
+def test_share_create_with_days_sets_future_expiry():
+    authorize()
+    mock_login()
+    route = mock_write("post", "share_link/", result={"token": "abc"})
+    result = runner.invoke(app, ["fs", "share", "/Freebox/x", "--days", "7"])
+    assert result.exit_code == 0
+    assert sent_json(route)["expire"] > 0
+
+
+@respx.mock
+def test_unshare_deletes_token():
+    authorize()
+    mock_login()
+    route = mock_write("delete", "share_link/abc", envelope={"success": True})
+    result = runner.invoke(app, ["fs", "unshare", "abc"])
+    assert result.exit_code == 0
+    assert route.called
+
+
+@respx.mock
+def test_rm_timeout_still_running_warns_not_success():
+    # --timeout 0 makes poll_task return after the first read; the task is still
+    # 'running', so the command must NOT claim success (regression: it did).
+    authorize()
+    mock_login()
+    mock_write("post", "fs/rm/", result={"id": 20, "state": "running"})
+    mock_get("fs/tasks/20", {"id": 20, "state": "running", "error": "none"})
+    result = runner.invoke(app, ["fs", "rm", "/Freebox/huge", "--yes", "--timeout", "0"])
+    assert result.exit_code == 0  # the box is still working; not an error
+    assert "still running" in result.stderr
+    assert "delete done" not in result.stderr  # must not falsely report completion
+
+
+@respx.mock
+def test_poll_reraises_non_notfound_error():
+    # A permission/internal error mid-poll must surface, not read as success.
+    authorize()
+    mock_login()
+    mock_write("post", "fs/rm/", result={"id": 21, "state": "running"})
+    mock_get("fs/tasks/21", envelope={"success": False, "error_code": "insufficient_rights"})
+    result = runner.invoke(app, ["fs", "rm", "/Freebox/x", "--yes"])
+    assert result.exit_code != 0
+    assert "delete done" not in result.stderr
+
+
+@respx.mock
+def test_poll_treats_task_gone_as_finished():
+    # A reaped (noent) task genuinely completed → success.
+    authorize()
+    mock_login()
+    mock_write("post", "fs/rm/", result={"id": 22, "state": "running"})
+    mock_get("fs/tasks/22", envelope={"success": False, "error_code": "noent"})
+    result = runner.invoke(app, ["fs", "rm", "/Freebox/x", "--yes"])
+    assert result.exit_code == 0
+    assert "delete" in result.stderr

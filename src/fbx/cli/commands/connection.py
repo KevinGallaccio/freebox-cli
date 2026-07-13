@@ -51,6 +51,61 @@ def ftth(ctx: typer.Context) -> None:
     ui.emit(data, ctx.obj, table=_ftth_table)
 
 
+# -- writes ----------------------------------------------------------------
+
+
+@app.command("config-set")
+def config_set(
+    ctx: typer.Context,
+    ping: bool | None = typer.Option(None, "--ping/--no-ping", help="Respond to WAN ping."),
+    wol: bool | None = typer.Option(None, "--wol/--no-wol", help="Wake-on-LAN proxy."),
+    remote_access: bool | None = typer.Option(
+        None, "--remote-access/--no-remote-access", help="HTTP remote admin."
+    ),
+    api_remote_access: bool | None = typer.Option(
+        None, "--api-remote-access/--no-api-remote-access", help="Remote API access."
+    ),
+    adblock: bool | None = typer.Option(None, "--adblock/--no-adblock", help="Ad blocker."),
+) -> None:
+    """Update WAN / remote-access configuration."""
+    fields: dict = {}
+    for key, value in (
+        ("ping", ping),
+        ("wol", wol),
+        ("remote_access", remote_access),
+        ("api_remote_access", api_remote_access),
+        ("adblock", adblock),
+    ):
+        if value is not None:
+            fields[key] = value
+    if not fields:
+        ui.error("nothing to change: pass at least one option (see --help).")
+        raise typer.Exit(1)
+    data = fetch(ctx, api.set_config, fields)
+    ui.emit_write(data, ctx.obj, message="updated connection config")
+
+
+@app.command("ipv6-set")
+def ipv6_set(
+    ctx: typer.Context,
+    enabled: bool | None = typer.Option(None, "--enabled/--disabled", help="Enable IPv6."),
+    firewall: bool | None = typer.Option(
+        None, "--firewall/--no-firewall", help="IPv6 firewall."
+    ),
+) -> None:
+    """Update IPv6 configuration."""
+    fields: dict = {}
+    if enabled is not None:
+        fields["ipv6_enabled"] = enabled
+    if firewall is not None:
+        fields["ipv6_firewall"] = firewall
+    if not fields:
+        ui.error("nothing to change: pass --enabled/--disabled and/or --firewall.")
+        raise typer.Exit(1)
+    data = fetch(ctx, api.set_ipv6_config, fields)
+    ui.emit_write(data, ctx.obj, message="updated IPv6 config")
+
+
 def _kv_table(title: str) -> Table:
     t = Table(show_header=False, box=None, title=title)
     t.add_column(style="bold")

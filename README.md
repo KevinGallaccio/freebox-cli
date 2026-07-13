@@ -5,11 +5,11 @@ connection status, LAN devices, DHCP, port forwarding, Wi-Fi, downloads,
 VPN, telephony — and the undocumented **virtual machine manager** — plus an
 MCP server so coding agents can drive the box.
 
-> ⚠️ **Early development (v0.2.0).** Working today: discovery, authorization,
-> the read-only view of every major domain (connection, LAN, DHCP, Wi-Fi,
-> downloads, storage, files, calls, contacts), `fbx system info`, and the
-> `fbx api` raw-call escape hatch. Write operations land phase by phase (see
-> the roadmap).
+> ⚠️ **Early development (v0.3.0).** Working today: discovery, authorization,
+> the read-only view of every major domain, **and full write control** —
+> DHCP, port forwarding/DMZ/UPnP, Wi-Fi, downloads, filesystem, connection,
+> system, calls, and contacts all have mutating commands now. VM lifecycle and
+> the MCP server land in later phases (see the roadmap).
 
 **Unofficial.** This project is not affiliated with Free or the Iliad group.
 
@@ -60,10 +60,15 @@ Every domain gets a noun command with Rich tables (and `--json` for scripts):
 ./fbx lan interfaces       # browsable interfaces (pub, wifiguest, …)
 ./fbx dhcp leases          # active leases
 ./fbx dhcp static          # static reservations
+./fbx fw redirs            # port-forwarding rules
+./fbx fw dmz               # DMZ host
+./fbx fw incoming          # built-in services' incoming ports
+./fbx fw upnp              # UPnP IGD state (+ upnp-redirs for client mappings)
 ./fbx wifi status          # radios (2.4/5/5/6 GHz on the Ultra)
 ./fbx wifi ap              # per-radio channel/width/state
 ./fbx wifi bss             # SSIDs + security (keys only via --json)
 ./fbx wifi stations        # associated clients, signal, rates
+./fbx wifi mac-filter      # MAC access-control list
 ./fbx downloads list       # download tasks
 ./fbx downloads stats      # manager counters
 ./fbx storage disks        # physical disks
@@ -71,6 +76,47 @@ Every domain gets a noun command with Rich tables (and `--json` for scripts):
 ./fbx fs ls /Freebox       # browse files on the box
 ./fbx calls list           # landline call log
 ./fbx contacts list        # address book
+```
+
+## Controlling the box
+
+Every domain has mutating commands too. Writes print a friendly confirmation on
+stderr and the box's response object on stdout (`--json`-clean); genuinely
+irreversible actions prompt for confirmation, bypassable with `--yes`:
+
+```sh
+# DHCP reservations + Wake-on-LAN
+./fbx dhcp static-add 02:00:00:00:00:99 192.168.1.222 -c "printer"
+./fbx dhcp static-rm  02:00:00:00:00:99
+./fbx wol 02:00:00:00:00:0a
+
+# Port forwarding / DMZ / UPnP
+./fbx fw redir-add 192.168.1.42 8080 --wan-port 8080 --comment web
+./fbx fw redir-rm 3
+./fbx fw dmz-set 192.168.1.50        # …or dmz-off
+./fbx fw upnp-set --disabled
+
+# Wi-Fi (disabling Wi-Fi globally asks first — you may be on it)
+./fbx wifi bss-set 02:00:00:00:00:10 --ssid "Home" --key "s3cret…"
+./fbx wifi mac-filter-add 02:00:00:00:00:99 --type blacklist
+./fbx wifi config-set --disabled          # prompts unless --yes
+
+# Downloads
+./fbx downloads add "magnet:?xt=urn:btih:…"
+./fbx downloads pause 3 && ./fbx downloads resume 3
+./fbx downloads erase 3                    # removes files → prompts
+
+# Files (mv/cp/rm are task-based and polled to completion)
+./fbx fs mkdir /Freebox/Téléchargements new
+./fbx fs cp /Freebox/a --to /Freebox/b
+./fbx fs rm /Freebox/old --yes
+./fbx fs share /Freebox/movie.mkv --days 7
+
+# LAN / connection / system / address book
+./fbx lan rename ether-02:00:00:00:00:0a "Living Room TV"
+./fbx connection config-set --no-ping
+./fbx system reboot                        # prompts unless --yes
+./fbx contacts add "Sandy Kilo" --first Sandy --last Kilo
 ```
 
 ## The `--json` contract
@@ -102,7 +148,7 @@ the docs (a leading `/api/latest/` or `/api/v16/` is stripped):
 - [x] Phase 0 — API reconnaissance on a real Freebox Ultra (kept private)
 - [x] Phase 1 — discovery, auth, `fbx system info`, `fbx api` (**v0.1.0**)
 - [x] Phase 2 — all read-only domains, `--json` everywhere (**v0.2.0**)
-- [ ] Phase 3 — write operations (port forwarding, DHCP, Wi-Fi, downloads)
+- [x] Phase 3 — write operations across every domain (**v0.3.0**)
 - [ ] Phase 4 — VM lifecycle + serial console
 - [ ] Phase 5 — MCP server + Claude Skill
 - [ ] Phase 6 — splash, `fbx top`, Homebrew tap, PyPI

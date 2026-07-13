@@ -14,6 +14,21 @@ app = typer.Typer(help="LAN devices and configuration.", no_args_is_help=True)
 
 def register(root: typer.Typer) -> None:
     root.add_typer(app, name="lan")
+    # Wake-on-LAN is a headline verb; expose it at the top level as `fbx wol`.
+    root.command("wol")(wol)
+
+
+def wol(
+    ctx: typer.Context,
+    mac: str = typer.Argument(..., help="MAC address of the host to wake."),
+    interface: str = typer.Option(
+        api.DEFAULT_INTERFACE, "--interface", "-i", help="Browser interface."
+    ),
+    password: str = typer.Option("", "--password", help="WoL SecureOn password (rare)."),
+) -> None:
+    """Send a Wake-on-LAN magic packet to a host."""
+    data = fetch(ctx, api.wake, mac, interface=interface, password=password)
+    ui.emit_write(data, ctx.obj, message=f"sent wake-on-LAN packet to {mac}")
 
 
 @app.command()
@@ -46,6 +61,63 @@ def config(ctx: typer.Context) -> None:
     """Show the box's LAN identity and router/bridge mode."""
     data = fetch(ctx, api.config)
     ui.emit(data, ctx.obj, table=_config_table)
+
+
+@app.command()
+def rename(
+    ctx: typer.Context,
+    host_id: str = typer.Argument(..., help="Host id, e.g. ether-02:00:00:00:00:05."),
+    name: str = typer.Argument(..., help="New display name for the device."),
+    interface: str = typer.Option(
+        api.DEFAULT_INTERFACE, "--interface", "-i", help="Browser interface."
+    ),
+) -> None:
+    """Set a LAN device's display name."""
+    data = fetch(ctx, api.update_host, host_id, {"primary_name": name}, interface=interface)
+    ui.emit_write(data, ctx.obj, message=f"renamed {host_id} to {name!r}")
+
+
+@app.command("set-type")
+def set_type(
+    ctx: typer.Context,
+    host_id: str = typer.Argument(..., help="Host id, e.g. ether-02:00:00:00:00:05."),
+    host_type: str = typer.Argument(..., help="Device type (e.g. workstation, smartphone)."),
+    interface: str = typer.Option(
+        api.DEFAULT_INTERFACE, "--interface", "-i", help="Browser interface."
+    ),
+) -> None:
+    """Set a LAN device's type (the icon/category shown in Freebox OS)."""
+    data = fetch(ctx, api.update_host, host_id, {"host_type": host_type}, interface=interface)
+    ui.emit_write(data, ctx.obj, message=f"set {host_id} type to {host_type}")
+
+
+@app.command("config-set")
+def config_set(
+    ctx: typer.Context,
+    mode: str | None = typer.Option(None, "--mode", help="LAN mode: router or bridge."),
+    ip: str | None = typer.Option(None, "--ip", help="The box's own LAN IPv4."),
+    name: str | None = typer.Option(None, "--name", help="Box display name."),
+    name_dns: str | None = typer.Option(None, "--name-dns", help="DNS host name."),
+    name_mdns: str | None = typer.Option(None, "--name-mdns", help="mDNS/Bonjour name."),
+    name_netbios: str | None = typer.Option(None, "--name-netbios", help="NetBIOS name."),
+) -> None:
+    """Update the box's LAN configuration (mode, IP, names)."""
+    fields: dict = {}
+    for key, value in (
+        ("mode", mode),
+        ("ip", ip),
+        ("name", name),
+        ("name_dns", name_dns),
+        ("name_mdns", name_mdns),
+        ("name_netbios", name_netbios),
+    ):
+        if value is not None:
+            fields[key] = value
+    if not fields:
+        ui.error("nothing to change: pass at least one option (see --help).")
+        raise typer.Exit(1)
+    data = fetch(ctx, api.set_config, fields)
+    ui.emit_write(data, ctx.obj, message="updated LAN config")
 
 
 def _devices_table(hosts: list, interface: str, show_all: bool) -> Table:

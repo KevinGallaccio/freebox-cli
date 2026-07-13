@@ -57,6 +57,215 @@ def stations(
     ui.emit(data, ctx.obj, table=_stations_table)
 
 
+@app.command("mac-filter")
+def mac_filter(ctx: typer.Context) -> None:
+    """List MAC access-control entries."""
+    data = fetch(ctx, api.mac_filters)
+    ui.emit(data, ctx.obj, table=_mac_filter_table)
+
+
+@app.command()
+def planning(ctx: typer.Context) -> None:
+    """Show the scheduled Wi-Fi on/off planning."""
+    data = fetch(ctx, api.planning)
+    ui.emit(data, ctx.obj, table=_planning_table)
+
+
+# -- writes ----------------------------------------------------------------
+
+
+@app.command("config-set")
+def config_set(
+    ctx: typer.Context,
+    enabled: bool | None = typer.Option(
+        None, "--enabled/--disabled", help="Turn Wi-Fi on or off globally."
+    ),
+    mac_filter_state: str | None = typer.Option(
+        None, "--mac-filter", help="MAC filter mode: disabled, whitelist, or blacklist."
+    ),
+    yes: bool = typer.Option(False, "--yes", "-y", help="Skip the disable confirmation."),
+) -> None:
+    """Update the global Wi-Fi configuration."""
+    fields: dict = {}
+    if enabled is not None:
+        fields["enabled"] = enabled
+    if mac_filter_state is not None:
+        fields["mac_filter_state"] = mac_filter_state
+    if not fields:
+        ui.error("nothing to change: pass --enabled/--disabled and/or --mac-filter.")
+        raise typer.Exit(1)
+    if enabled is False:
+        ui.confirm(
+            "Disable Wi-Fi globally? If this machine is on Wi-Fi you will lose "
+            "access to the box. Continue?",
+            yes=yes,
+        )
+    data = fetch(ctx, api.set_config, fields)
+    ui.emit_write(data, ctx.obj, message="updated Wi-Fi config")
+
+
+@app.command("ap-set")
+def ap_set(
+    ctx: typer.Context,
+    ap_id: int = typer.Argument(..., help="Access-point id (see `fbx wifi ap`)."),
+    channel: int | None = typer.Option(None, "--channel", help="Primary channel (0 = auto)."),
+    channel_width: str | None = typer.Option(
+        None, "--channel-width", help="Channel width: 20, 40, 80, 160, 320."
+    ),
+    enabled: bool | None = typer.Option(None, "--enabled/--disabled", help="Toggle the radio."),
+) -> None:
+    """Change a Wi-Fi radio's channel, width, or enable state."""
+    config: dict = {}
+    if channel is not None:
+        config["primary_channel"] = channel
+    if channel_width is not None:
+        config["channel_width"] = channel_width
+    if enabled is not None:
+        config["enabled"] = enabled
+    if not config:
+        ui.error("nothing to change: pass --channel, --channel-width, and/or --enabled.")
+        raise typer.Exit(1)
+    data = fetch(ctx, api.update_ap, ap_id, config)
+    ui.emit_write(data, ctx.obj, message=f"updated AP {ap_id}")
+
+
+@app.command("bss-set")
+def bss_set(
+    ctx: typer.Context,
+    bss_id: str = typer.Argument(..., help="BSS id / BSSID (see `fbx wifi bss --json`)."),
+    ssid: str | None = typer.Option(None, "--ssid", help="Network name."),
+    key: str | None = typer.Option(None, "--key", help="Pre-shared key (password)."),
+    encryption: str | None = typer.Option(
+        None, "--encryption", help="e.g. wpa2_psk_ccmp, wpa3_psk_ccmp."
+    ),
+    enabled: bool | None = typer.Option(None, "--enabled/--disabled", help="Broadcast or not."),
+    hide: bool | None = typer.Option(None, "--hide/--show", help="Hide the SSID."),
+) -> None:
+    """Change an SSID's name, key, encryption, or visibility."""
+    config: dict = {}
+    for cfg_key, value in (
+        ("ssid", ssid),
+        ("key", key),
+        ("encryption", encryption),
+        ("enabled", enabled),
+        ("hide_ssid", hide),
+    ):
+        if value is not None:
+            config[cfg_key] = value
+    if not config:
+        ui.error("nothing to change: pass at least one option (see --help).")
+        raise typer.Exit(1)
+    data = fetch(ctx, api.update_bss, bss_id, config)
+    ui.emit_write(data, ctx.obj, message=f"updated BSS {bss_id}")
+
+
+@app.command("mac-filter-add")
+def mac_filter_add(
+    ctx: typer.Context,
+    mac: str = typer.Argument(..., help="MAC address to filter."),
+    filter_type: str = typer.Option(
+        "blacklist", "--type", help="whitelist or blacklist."
+    ),
+    comment: str = typer.Option("", "--comment", "-c", help="Note."),
+) -> None:
+    """Add a MAC to the Wi-Fi access-control list."""
+    data = fetch(ctx, api.create_mac_filter, mac=mac, type=filter_type, comment=comment)
+    ui.emit_write(data, ctx.obj, message=f"added {mac} to the {filter_type}")
+
+
+@app.command("mac-filter-edit")
+def mac_filter_edit(
+    ctx: typer.Context,
+    filter_id: str = typer.Argument(
+        ..., help="Filter id, e.g. 02:..-blacklist (see `fbx wifi mac-filter --json`)."
+    ),
+    filter_type: str | None = typer.Option(None, "--type", help="whitelist or blacklist."),
+    comment: str | None = typer.Option(None, "--comment", "-c", help="New note."),
+) -> None:
+    """Edit a MAC-filter entry."""
+    fields: dict = {}
+    if filter_type is not None:
+        fields["type"] = filter_type
+    if comment is not None:
+        fields["comment"] = comment
+    if not fields:
+        ui.error("nothing to change: pass --type and/or --comment.")
+        raise typer.Exit(1)
+    data = fetch(ctx, api.update_mac_filter, filter_id, fields)
+    ui.emit_write(data, ctx.obj, message=f"updated MAC filter {filter_id}")
+
+
+@app.command("mac-filter-rm")
+def mac_filter_rm(
+    ctx: typer.Context,
+    filter_id: str = typer.Argument(
+        ..., help="Filter id, e.g. 02:..-blacklist (see `fbx wifi mac-filter --json`)."
+    ),
+) -> None:
+    """Remove a MAC-filter entry."""
+    data = fetch(ctx, api.delete_mac_filter, filter_id)
+    ui.emit_write(data, ctx.obj, message=f"removed MAC filter {filter_id}")
+
+
+@app.command("planning-set")
+def planning_set(
+    ctx: typer.Context,
+    enabled: bool = typer.Option(
+        ..., "--enabled/--disabled", help="Enable/disable time-based Wi-Fi planning."
+    ),
+) -> None:
+    """Enable or disable the scheduled Wi-Fi planning."""
+    data = fetch(ctx, api.set_planning, {"use_planning": enabled})
+    ui.emit_write(data, ctx.obj, message=f"Wi-Fi planning {'enabled' if enabled else 'disabled'}")
+
+
+@app.command("temp-disable")
+def temp_disable(
+    ctx: typer.Context,
+    duration: int = typer.Option(..., "--duration", help="Seconds to disable Wi-Fi for."),
+    keep: str | None = typer.Option(
+        None, "--keep", help="Band to leave up (e.g. 2d4g) so you keep a link."
+    ),
+    yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation."),
+) -> None:
+    """Temporarily disable Wi-Fi for a fixed duration."""
+    if keep is None:
+        ui.confirm(
+            f"Disable ALL Wi-Fi for {duration}s? If this machine is on Wi-Fi you "
+            "will lose access (pass --keep <band> to keep one up). Continue?",
+            yes=yes,
+        )
+    data = fetch(ctx, api.temp_disable, duration=duration, keep=keep)
+    ui.emit_write(data, ctx.obj, message=f"Wi-Fi disabled for {duration}s")
+
+
+@app.command("wps-set")
+def wps_set(
+    ctx: typer.Context,
+    enabled: bool = typer.Option(..., "--enabled/--disabled", help="Toggle WPS globally."),
+) -> None:
+    """Enable or disable WPS."""
+    data = fetch(ctx, api.set_wps, enabled)
+    ui.emit_write(data, ctx.obj, message=f"WPS {'enabled' if enabled else 'disabled'}")
+
+
+@app.command("wps-start")
+def wps_start(
+    ctx: typer.Context,
+    bssid: str = typer.Argument(..., help="BSSID to start a WPS pairing session on."),
+) -> None:
+    """Start a WPS pairing session on a BSS."""
+    data = fetch(ctx, api.wps_start, bssid)
+    ui.emit_write(data, ctx.obj, message=f"started WPS session on {bssid}")
+
+
+@app.command("wps-stop")
+def wps_stop(ctx: typer.Context) -> None:
+    """Clear all active WPS pairing sessions."""
+    data = fetch(ctx, api.wps_stop)
+    ui.emit_write(data, ctx.obj, message="cleared WPS sessions")
+
+
 def _status_table(d: dict) -> Table:
     t = Table(box=None, title=f"Wi-Fi — {fmt.safe(d.get('state', '?'))}")
     t.add_column("PHY", justify="right")
@@ -132,6 +341,36 @@ def _bss_table(items: list) -> Table:
             f"[green]{state}[/]" if state == "active" else fmt.safe(state),
             str(st.get("sta_count", "")),
         )
+    return t
+
+
+def _mac_filter_table(items: list) -> Table:
+    t = Table(box=None, title=f"Wi-Fi MAC filter — {len(items)}")
+    t.add_column("MAC")
+    t.add_column("Type")
+    t.add_column("Host")
+    t.add_column("Comment")
+    for f in items:
+        t.add_row(
+            fmt.safe(f.get("mac")),
+            fmt.safe(f.get("type")),
+            fmt.safe(f.get("hostname")),
+            fmt.safe(f.get("comment")),
+        )
+    return t
+
+
+def _planning_table(d: dict) -> Table:
+    t = Table(show_header=False, box=None, title="Wi-Fi planning")
+    t.add_column(style="bold")
+    t.add_column()
+    t.add_row("Use planning", fmt.yesno(d.get("use_planning")))
+    if d.get("resolution") is not None:
+        t.add_row("Resolution", f"{d.get('resolution')} slots/day")
+    mapping = d.get("mapping") or []
+    if mapping:
+        on = sum(1 for slot in mapping if slot in (True, "on"))
+        t.add_row("Slots on", f"{on}/{len(mapping)}")
     return t
 
 

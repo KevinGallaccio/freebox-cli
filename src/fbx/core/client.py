@@ -77,24 +77,32 @@ class FbxClient:
         *,
         data: Any = None,
         params: dict | None = None,
+        form: dict | None = None,
+        files: Any = None,
         _retry: bool = True,
     ) -> Any:
         """Make an authenticated call and return the unwrapped `result`.
 
-        `path` is relative to the API base (e.g. "system/", "vm/"). Re-opens the
-        session once on an auth-expiry error, then gives up.
+        `path` is relative to the API base (e.g. "system/", "vm/"). `data` is a
+        JSON body; `form`/`files` are the form-encoded / multipart alternatives
+        (only `POST /downloads/add` needs them). Re-opens the session once on an
+        auth-expiry error, then gives up.
         """
         self.ensure_session()
         rel = path.lstrip("/")
         url = f"{self.base_url}{rel}"
         try:
-            return envelope.call(self._http, method, url, path=rel, json=data, params=params)
+            return envelope.call(
+                self._http, method, url, path=rel, json=data, params=params,
+                form=form, files=files,
+            )
         except FbxAPIError as exc:
             if _retry and exc.error_code in _AUTH_RETRY_CODES:
                 log.debug("auth expired (%s); re-opening session once", exc.error_code)
                 self.login()
                 return self.request(
-                    method, path, data=data, params=params, _retry=False
+                    method, path, data=data, params=params, form=form, files=files,
+                    _retry=False,
                 )
             raise
 
@@ -103,6 +111,10 @@ class FbxClient:
 
     def post(self, path: str, *, data: Any = None) -> Any:
         return self.request("POST", path, data=data)
+
+    def post_form(self, path: str, *, form: dict | None = None, files: Any = None) -> Any:
+        """POST a form-encoded (or multipart, when `files` is given) body."""
+        return self.request("POST", path, form=form, files=files)
 
     def put(self, path: str, *, data: Any = None) -> Any:
         return self.request("PUT", path, data=data)

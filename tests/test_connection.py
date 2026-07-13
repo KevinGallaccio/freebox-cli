@@ -8,7 +8,7 @@ import respx
 from typer.testing import CliRunner
 
 from fbx.cli.main import app
-from tests.helpers import authorize, mock_get, mock_login
+from tests.helpers import authorize, mock_get, mock_login, mock_write, sent_json
 
 runner = CliRunner()
 
@@ -160,3 +160,34 @@ def test_dict_command_survives_missing_result():
     result = runner.invoke(app, ["connection", "config"])
     assert result.exit_code == 0
     assert json.loads(result.stdout) is None
+
+
+# -- writes ----------------------------------------------------------------
+
+
+@respx.mock
+def test_config_set_partial_body():
+    authorize()
+    mock_login()
+    route = mock_write("put", "connection/config/", result={"ping": True})
+    result = runner.invoke(app, ["connection", "config-set", "--ping", "--no-wol"])
+    assert result.exit_code == 0
+    assert sent_json(route) == {"ping": True, "wol": False}
+
+
+@respx.mock
+def test_config_set_needs_an_option():
+    authorize()
+    mock_login()
+    result = runner.invoke(app, ["connection", "config-set"])
+    assert result.exit_code == 1
+
+
+@respx.mock
+def test_ipv6_set_maps_flags():
+    authorize()
+    mock_login()
+    route = mock_write("put", "connection/ipv6/config/", result={"ipv6_enabled": True})
+    result = runner.invoke(app, ["connection", "ipv6-set", "--enabled", "--no-firewall"])
+    assert result.exit_code == 0
+    assert sent_json(route) == {"ipv6_enabled": True, "ipv6_firewall": False}
