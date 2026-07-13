@@ -5,11 +5,12 @@ connection status, LAN devices, DHCP, port forwarding, Wi-Fi, downloads,
 VPN, telephony — and the undocumented **virtual machine manager** — plus an
 MCP server so coding agents can drive the box.
 
-> ⚠️ **Early development (v0.3.0).** Working today: discovery, authorization,
-> the read-only view of every major domain, **and full write control** —
-> DHCP, port forwarding/DMZ/UPnP, Wi-Fi, downloads, filesystem, connection,
-> system, calls, and contacts all have mutating commands now. VM lifecycle and
-> the MCP server land in later phases (see the roadmap).
+> ⚠️ **Early development (v0.4.0).** Working today: discovery, authorization,
+> the read-only view of every major domain, full write control across DHCP,
+> port forwarding/DMZ/UPnP, Wi-Fi, downloads, filesystem, connection, system,
+> calls and contacts — **and the virtual-machine manager**, including a
+> `fbx vm console` serial console over WebSocket. The MCP server lands next
+> (see the roadmap).
 
 **Unofficial.** This project is not affiliated with Free or the Iliad group.
 
@@ -119,6 +120,33 @@ irreversible actions prompt for confirmation, bypassable with `--yes`:
 ./fbx contacts add "Sandy Kilo" --first Sandy --last Kilo
 ```
 
+## Virtual machines
+
+The Freebox Ultra runs an aarch64 hypervisor. `fbx vm` drives the whole
+lifecycle — including a **serial console over WebSocket**, the way `virsh
+console` attaches to a guest tty:
+
+```sh
+./fbx vm list                              # every VM + status, vCPU, RAM
+./fbx vm info                              # hypervisor capacity / free headroom
+./fbx vm distros                           # Free's catalog of cloud images
+
+# create a disk, then a VM, then boot it
+./fbx vm disk-create /Freebox/VMs/web.qcow2 8G
+./fbx vm create --name web --disk /Freebox/VMs/web.qcow2 \
+    --memory 512 --vcpus 1 --cloudinit-file cloud-init.yaml
+./fbx vm start 2
+./fbx vm console 2                         # attach the serial console (Ctrl-] detaches)
+
+./fbx vm shutdown 2                         # graceful ACPI power-off
+./fbx vm stop 2                            # hard power-off (prompts)
+./fbx vm rm 2                              # delete the definition (prompts; disk file kept)
+```
+
+The serial console needs the bundled `websockets` dependency; paths for
+`--disk`/`--cd` are absolute (`/Freebox/…`), and `cloudinit_userdata` (which
+holds SSH keys and passwords) is shown only via `--json`, never in a table.
+
 ## The `--json` contract
 
 Every command that emits data supports `--json`, and it prints the **whole**
@@ -149,7 +177,7 @@ the docs (a leading `/api/latest/` or `/api/v16/` is stripped):
 - [x] Phase 1 — discovery, auth, `fbx system info`, `fbx api` (**v0.1.0**)
 - [x] Phase 2 — all read-only domains, `--json` everywhere (**v0.2.0**)
 - [x] Phase 3 — write operations across every domain (**v0.3.0**)
-- [ ] Phase 4 — VM lifecycle + serial console
+- [x] Phase 4 — VM lifecycle + serial console (**v0.4.0**)
 - [ ] Phase 5 — MCP server + Claude Skill
 - [ ] Phase 6 — splash, `fbx top`, Homebrew tap, PyPI
 

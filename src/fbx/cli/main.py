@@ -30,6 +30,7 @@ from .commands import fw as fw_cmd
 from .commands import lan as lan_cmd
 from .commands import storage as storage_cmd
 from .commands import system as system_cmd
+from .commands import vm as vm_cmd
 from .commands import wifi as wifi_cmd
 
 app = typer.Typer(
@@ -145,6 +146,7 @@ fs_cmd.register(app)
 fw_cmd.register(app)
 lan_cmd.register(app)
 storage_cmd.register(app)
+vm_cmd.register(app)
 wifi_cmd.register(app)
 
 
