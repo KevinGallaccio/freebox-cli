@@ -5,14 +5,15 @@ connection status, LAN devices, DHCP, port forwarding, Wi-Fi, downloads,
 VPN, telephony — and the undocumented **virtual machine manager** — plus an
 MCP server so coding agents can drive the box.
 
-> ⚠️ **Early development.** Nothing to install yet. First milestone is the
-> API reconnaissance documented in `docs/api-notes.md`.
+> ⚠️ **Early development.** Nothing to install yet. Phase 0 (API
+> reconnaissance) is complete — see [`docs/api-notes.md`](docs/api-notes.md),
+> the reverse-engineered Freebox OS API spec this project is built against.
 
 **Unofficial.** This project is not affiliated with Free or the Iliad group.
 
 ## Roadmap
 
-- [ ] Phase 0 — API recon on a real Freebox Ultra → `docs/api-notes.md`
+- [x] Phase 0 — API recon on a real Freebox Ultra → [`docs/api-notes.md`](docs/api-notes.md)
 - [ ] Phase 1 — discovery, auth, `fbx system info`, `fbx api` (v0.1.0)
 - [ ] Phase 2 — all read-only domains, `--json` everywhere
 - [ ] Phase 3 — write operations (port forwarding, DHCP, Wi-Fi, downloads)
