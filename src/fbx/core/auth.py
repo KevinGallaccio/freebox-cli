@@ -21,7 +21,7 @@ from collections.abc import Callable
 
 import httpx
 
-from .envelope import unwrap
+from .envelope import call
 from .errors import (
     FbxAPIError,
     FbxAuthError,
@@ -58,8 +58,11 @@ def request_authorization(
     The box now shows a prompt on its front display; the user must accept it.
     Only works from the LAN.
     """
-    resp = http.post(
+    result = call(
+        http,
+        "POST",
         f"{base_url}login/authorize/",
+        path="login/authorize/",
         json={
             "app_id": app_id,
             "app_name": app_name,
@@ -67,14 +70,14 @@ def request_authorization(
             "device_name": device_name,
         },
     )
-    result = unwrap(resp, method="POST", path="login/authorize/")
     return AuthorizeResult.model_validate(result)
 
 
 def poll_track(http: httpx.Client, base_url: str, track_id: int) -> TrackStatus:
     """`GET /login/authorize/{track_id}` — current authorization status."""
-    resp = http.get(f"{base_url}login/authorize/{track_id}")
-    result = unwrap(resp, method="GET", path=f"login/authorize/{track_id}")
+    result = call(
+        http, "GET", f"{base_url}login/authorize/{track_id}", path=f"login/authorize/{track_id}"
+    )
     raw = (result or {}).get("status", "unknown")
     try:
         return TrackStatus(raw)
@@ -97,7 +100,9 @@ def wait_for_authorization(
     `on_pending(elapsed)` is called each tick so the UI can nudge the user to
     the box ("go press ▶") — the #1 reason these flows fail is a missed prompt.
     """
-    elapsed = 0
+    # Accumulate the real (float) interval — `int(interval)` truncated
+    # sub-second intervals to 0 and forced a fake +1, timing the loop out early.
+    elapsed = 0.0
     while elapsed < poll_seconds:
         status = poll_track(http, base_url, track_id)
         if status is TrackStatus.GRANTED:
@@ -107,9 +112,9 @@ def wait_for_authorization(
         if status is TrackStatus.TIMEOUT:
             raise FbxAuthorizationTimeout("the box's authorization prompt expired")
         if on_pending is not None:
-            on_pending(elapsed)
+            on_pending(int(elapsed))
         sleep(interval)
-        elapsed += int(interval) or 1
+        elapsed += interval
     raise FbxAuthorizationTimeout(
         f"authorization not granted within {poll_seconds}s"
     )
@@ -122,8 +127,7 @@ def get_challenge(http: httpx.Client, base_url: str) -> str:
     plain string. (The web UI's own password login returns an obfuscated form;
     that path is not used here — see docs/api-notes.md.)
     """
-    resp = http.get(f"{base_url}login/")
-    result = unwrap(resp, method="GET", path="login/")
+    result = call(http, "GET", f"{base_url}login/", path="login/")
     challenge = (result or {}).get("challenge")
     if not isinstance(challenge, str):
         raise FbxAuthError(
@@ -148,11 +152,13 @@ def open_session(
     challenge = get_challenge(http, base_url)
     password = sign_challenge(app_token, challenge)
     try:
-        resp = http.post(
+        result = call(
+            http,
+            "POST",
             f"{base_url}login/session/",
+            path="login/session/",
             json={"app_id": app_id, "password": password},
         )
-        result = unwrap(resp, method="POST", path="login/session/")
     except FbxAPIError as exc:
         if exc.error_code in {"invalid_token", "insufficient_rights", "denied"}:
             raise FbxAuthError(
@@ -170,8 +176,7 @@ def fetch_permissions(http: httpx.Client, base_url: str) -> dict:
     `http`). Returns `{}` if the box doesn't expose it.
     """
     try:
-        resp = http.get(f"{base_url}login/perms/")
-        return unwrap(resp, method="GET", path="login/perms/") or {}
+        return call(http, "GET", f"{base_url}login/perms/", path="login/perms/") or {}
     except (FbxAPIError, FbxHTTPError) as exc:
         log.debug("login/perms/ unavailable: %s", exc)
         return {}

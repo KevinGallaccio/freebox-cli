@@ -43,7 +43,10 @@ def _mock_box(*, system_result=None):
     respx.post(f"{BASE}login/session/").mock(
         return_value=httpx.Response(
             200,
-            json={"success": True, "result": {"session_token": "S1", "permissions": {"settings": True}}},
+            json={
+                "success": True,
+                "result": {"session_token": "S1", "permissions": {"settings": True}},
+            },
         )
     )
     if system_result is not None:
@@ -107,3 +110,32 @@ def test_api_bad_json_data_exits_1():
     result = runner.invoke(app, ["api", "POST", "vm/1/start", "--data", "{not json}"])
     assert result.exit_code == 1
     assert "valid JSON" in result.stderr
+
+
+@respx.mock
+def test_transport_error_exits_5_no_traceback():
+    # Box reachable through login, then a mid-call blip: clean message + exit 5,
+    # never a raw Python traceback (which would also corrupt a --json pipe).
+    _authorized()
+    _mock_box()
+    respx.get(f"{BASE}system/").mock(side_effect=httpx.ConnectError("reset"))
+    result = runner.invoke(app, ["system", "info"])
+    assert result.exit_code == 5
+    assert "can't reach the box" in result.stderr
+    assert "Traceback" not in result.stderr
+    assert result.stdout.strip() == ""
+
+
+@respx.mock
+def test_auth_status_survives_unreachable_box():
+    # `status` is informational: an unreachable box → authenticated:false as
+    # data, exit 0, not a crash.
+    _authorized()
+    respx.get("http://mafreebox.freebox.fr/api_version").mock(
+        side_effect=httpx.ConnectError("down")
+    )
+    result = runner.invoke(app, ["--json", "auth", "status"])
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["authenticated"] is False
+    assert "reason" in payload

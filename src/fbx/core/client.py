@@ -17,9 +17,8 @@ from typing import Any
 
 import httpx
 
-from . import auth, credentials, discovery
+from . import auth, credentials, discovery, envelope
 from .certs import default_verify
-from .envelope import unwrap
 from .errors import (
     FbxAPIError,
     FbxNotAuthenticated,
@@ -89,8 +88,7 @@ class FbxClient:
         rel = path.lstrip("/")
         url = f"{self.base_url}{rel}"
         try:
-            resp = self._http.request(method.upper(), url, json=data, params=params)
-            return unwrap(resp, method=method.upper(), path=rel)
+            return envelope.call(self._http, method, url, path=rel, json=data, params=params)
         except FbxAPIError as exc:
             if _retry and exc.error_code in _AUTH_RETRY_CODES:
                 log.debug("auth expired (%s); re-opening session once", exc.error_code)

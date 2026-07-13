@@ -10,9 +10,9 @@ is used when none is given.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
-import stat
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
@@ -64,17 +64,28 @@ def _read_all() -> dict:
 
 
 def _write_all(data: dict) -> None:
+    """Write the store atomically: a crash mid-write must never lose the tokens.
+
+    Serialize to a fresh 0600 temp file in the same directory, then `os.replace`
+    it onto the target — an atomic rename on the same filesystem. The secret is
+    only ever written into a file created at 0600 (never into a pre-existing,
+    possibly wider-mode file), and a torn write leaves the old file intact.
+    """
     path = credentials_path()
     path.parent.mkdir(parents=True, exist_ok=True)
-    # Create with 0600 from the start; never widen an existing file.
-    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    tmp = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_TRUNC, 0o600)
     try:
         with os.fdopen(fd, "w") as fh:
             json.dump(data, fh, indent=2)
             fh.write("\n")
-    finally:
-        # Defensively re-assert 0600 in case the file pre-existed with wider bits.
-        os.chmod(path, stat.S_IRUSR | stat.S_IWUSR)
+            fh.flush()
+            os.fsync(fh.fileno())
+        os.replace(tmp, path)
+    except BaseException:
+        with contextlib.suppress(OSError):
+            os.unlink(tmp)
+        raise
 
 
 def load(profile: str = "default") -> Credential | None:

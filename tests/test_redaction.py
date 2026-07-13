@@ -32,7 +32,30 @@ def test_filter_scrubs_log_record(caplog):
 
 
 def test_install_is_idempotent():
-    logger = logging.getLogger("fbx.test.redaction.idem")
-    redaction.install(logger)
-    redaction.install(logger)
-    assert sum(isinstance(f, redaction.RedactingFilter) for f in logger.filters) == 1
+    handler = logging.NullHandler()
+    redaction.install(handler)
+    redaction.install(handler)
+    assert sum(isinstance(f, redaction.RedactingFilter) for f in handler.filters) == 1
+
+
+def test_handler_filter_scrubs_child_logger_records(capsys):
+    # Regression: the filter must live on the HANDLER, because a filter on the
+    # parent `fbx` logger is never applied to records propagated from child
+    # loggers (fbx.auth, fbx.client). This mirrors the real CLI wiring.
+    import io
+
+    stream = io.StringIO()
+    handler = logging.StreamHandler(stream)
+    redaction.install(handler)
+    parent = logging.getLogger("fbx.test.tree")
+    parent.handlers.clear()
+    parent.addHandler(handler)
+    parent.setLevel(logging.DEBUG)
+
+    child = logging.getLogger("fbx.test.tree.client")  # a propagating child
+    child.debug("opened session_token=hunter2 header X-Fbx-App-Auth: SEKRET")
+
+    out = stream.getvalue()
+    assert "hunter2" not in out
+    assert "SEKRET" not in out
+    assert "«redacted»" in out

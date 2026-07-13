@@ -10,7 +10,7 @@ from rich.table import Table
 from ... import APP_ID, APP_NAME, __version__
 from ...core import client as core_client
 from ...core import credentials
-from ...core.errors import FbxAuthError
+from ...core.errors import FbxError
 from .. import ui
 
 app = typer.Typer(help="Authorize this machine and inspect the session.", no_args_is_help=True)
@@ -90,7 +90,9 @@ def status(ctx: typer.Context) -> None:
     }
     try:
         fbx = core_client.connect(state.profile, host=state.host)
-    except FbxAuthError as exc:
+    except FbxError as exc:
+        # A stale token, an unreachable box, or a transport blip — `status` is
+        # informational, so report it as data rather than crashing.
         payload["reason"] = str(exc)
         ui.warn(str(exc))
         ui.emit(payload, state, table=_status_table)

@@ -59,7 +59,14 @@ class RedactingFilter(logging.Filter):
         return True
 
 
-def install(logger: logging.Logger) -> None:
-    """Idempotently attach the redacting filter to a logger."""
-    if not any(isinstance(f, RedactingFilter) for f in logger.filters):
-        logger.addFilter(RedactingFilter())
+def install(target: logging.Filterer) -> None:
+    """Idempotently attach the redacting filter to a handler (or logger).
+
+    Attach to a **handler**, not a logger: Python runs a logger's own filters
+    only for records logged directly on it, so a filter on the parent `fbx`
+    logger never sees records propagated up from `fbx.auth`/`fbx.client`/…. A
+    handler's filters run for every record it emits, propagated or not — which
+    is the only placement that actually scrubs real output.
+    """
+    if not any(isinstance(f, RedactingFilter) for f in target.filters):
+        target.addFilter(RedactingFilter())

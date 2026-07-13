@@ -49,6 +49,37 @@ def test_file_is_0600():
     assert mode == 0o600
 
 
+def test_overwriting_wider_mode_file_ends_at_0600():
+    # Simulate a pre-existing, world-readable credentials file (e.g. restored
+    # from a backup). After a save it must be 0600, never briefly wider.
+    path = credentials.credentials_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("{}")
+    path.chmod(0o644)
+    credentials.save(credentials.Credential(app_id="a", app_token="t"))
+    assert stat.S_IMODE(path.stat().st_mode) == 0o600
+
+
+def test_torn_write_preserves_existing_file(monkeypatch):
+    # A crash mid-serialize must leave the previously stored token intact and
+    # leave no stray temp file behind.
+    credentials.save(credentials.Credential(app_id="a", app_token="original"))
+
+    def boom(*a, **k):
+        raise RuntimeError("disk full")
+
+    monkeypatch.setattr(credentials.json, "dump", boom)
+    with pytest.raises(RuntimeError):
+        credentials.save(credentials.Credential(app_id="a", app_token="new"))
+
+    # load() uses json.loads, not the patched json.dump — no undo needed (and
+    # calling monkeypatch.undo() here would also revert the config-dir isolation
+    # and read the real credentials file).
+    assert credentials.load().app_token == "original"  # old data survived
+    leftovers = list(credentials.config_dir().glob("*.tmp"))
+    assert leftovers == []  # temp cleaned up
+
+
 def test_unknown_fields_ignored_on_load():
     # Forward-compat: a newer fbx may have written extra keys.
     credentials.save(credentials.Credential(app_id="a", app_token="t"))

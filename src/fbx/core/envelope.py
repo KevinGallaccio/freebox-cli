@@ -46,3 +46,27 @@ def unwrap(resp: httpx.Response, *, method: str = "", path: str = "") -> Any:
         path=path,
         status=resp.status_code,
     )
+
+
+def call(
+    http: httpx.Client,
+    method: str,
+    url: str,
+    *,
+    path: str = "",
+    json: Any = None,
+    params: dict | None = None,
+) -> Any:
+    """Send a request and return the unwrapped `result`, with typed errors only.
+
+    Wraps every transport-level httpx failure (connect/read/timeout/protocol)
+    into `FbxHTTPError` so no raw httpx exception ever escapes the core into the
+    CLI. Envelope failures still surface as `FbxAPIError` from `unwrap`.
+    """
+    method = method.upper()
+    label = path or url
+    try:
+        resp = http.request(method, url, json=json, params=params)
+    except httpx.HTTPError as exc:
+        raise FbxHTTPError(f"could not reach the box ({method} {label}): {exc}") from exc
+    return unwrap(resp, method=method, path=label)

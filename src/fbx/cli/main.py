@@ -13,6 +13,7 @@ from ..core.errors import (
     FbxAuthError,
     FbxDiscoveryError,
     FbxError,
+    FbxHTTPError,
     FbxNotAuthenticated,
     FbxPermissionError,
 )
@@ -55,7 +56,8 @@ def handle_errors():
     except FbxAuthError as exc:
         ui.error(str(exc))
         raise typer.Exit(EXIT_AUTH) from exc
-    except FbxDiscoveryError as exc:
+    except (FbxDiscoveryError, FbxHTTPError) as exc:
+        # Discovery failure or a transport error mid-session — both "can't reach".
         ui.error(f"can't reach the box: {exc}")
         raise typer.Exit(EXIT_UNREACHABLE) from exc
     except FbxError as exc:
@@ -112,11 +114,13 @@ def main_callback(
     # allows warnings; verbose drops to DEBUG.
     level = logging.DEBUG if verbose else logging.WARNING
     handler = logging.StreamHandler()  # stderr
+    # Redact on the HANDLER: handler filters run for records propagated from
+    # child loggers (fbx.auth, fbx.client, …); a logger filter would not.
+    redaction.install(handler)
     root = logging.getLogger("fbx")
     root.handlers.clear()
     root.addHandler(handler)
     root.setLevel(level)
-    redaction.install(root)
 
 
 app.add_typer(auth_cmd.app, name="auth")

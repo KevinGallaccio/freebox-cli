@@ -35,7 +35,9 @@ def _client() -> FbxClient:
 def test_request_returns_unwrapped_result():
     _login_routes()
     respx.get(f"{BASE}system/").mock(
-        return_value=httpx.Response(200, json={"success": True, "result": {"firmware_version": "4.12.2"}})
+        return_value=httpx.Response(
+            200, json={"success": True, "result": {"firmware_version": "4.12.2"}}
+        )
     )
     with _client() as fbx:
         assert fbx.get("system/") == {"firmware_version": "4.12.2"}
@@ -88,6 +90,26 @@ def test_persistent_auth_failure_does_not_loop():
 def test_non_json_body_raises_http_error():
     _login_routes()
     respx.get(f"{BASE}system/").mock(return_value=httpx.Response(500, text="<html>oops</html>"))
+    with _client() as fbx:
+        with pytest.raises(FbxHTTPError):
+            fbx.get("system/")
+
+
+@respx.mock
+def test_transport_error_midcall_becomes_typed_error():
+    # Regression: box reachable at login, then blips mid-call. The raw
+    # httpx.ConnectError must be wrapped as FbxHTTPError, not escape uncaught.
+    _login_routes()
+    respx.get(f"{BASE}system/").mock(side_effect=httpx.ConnectError("connection reset"))
+    with _client() as fbx:
+        with pytest.raises(FbxHTTPError):
+            fbx.get("system/")
+
+
+@respx.mock
+def test_transport_error_during_login_becomes_typed_error():
+    # A transport failure in the login/session flow must also be typed.
+    respx.get(f"{BASE}login/").mock(side_effect=httpx.ReadTimeout("slow"))
     with _client() as fbx:
         with pytest.raises(FbxHTTPError):
             fbx.get("system/")
