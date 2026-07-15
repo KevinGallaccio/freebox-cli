@@ -101,7 +101,7 @@ def _tile_text(app: FbxApp, name: str) -> str:
 async def test_dashboard_renders_tiles_and_suggestions():
     authorize()
     _mock_dashboard_box()
-    app = FbxApp()
+    app = FbxApp(splash=False)
     async with app.run_test(size=(120, 40)) as pilot:
         await _settle(pilot, lambda: "up" in _tile_text(app, "connection"))
         assert "ftth" in _tile_text(app, "connection")
@@ -125,7 +125,7 @@ async def test_dashboard_renders_tiles_and_suggestions():
 async def test_dashboard_menu_opens_domain_screen():
     authorize()
     _mock_dashboard_box()
-    app = FbxApp()
+    app = FbxApp(splash=False)
     async with app.run_test(size=(120, 40)) as pilot:
         await _settle(pilot, lambda: "up" in _tile_text(app, "connection"))
         app.open_domain("system")
@@ -148,7 +148,7 @@ async def test_reboot_needs_confirmation_and_posts():
     authorize()
     _mock_dashboard_box()
     reboot = mock_write("POST", "system/reboot/")
-    app = FbxApp()
+    app = FbxApp(splash=False)
     async with app.run_test(size=(120, 40)) as pilot:
         await _settle(pilot, lambda: "up" in _tile_text(app, "connection"))
         app.open_domain("system")
@@ -238,3 +238,17 @@ def test_suggestions_quiet_on_a_tidy_box():
         "lan_devices": [{"active": True, "primary_name": "host-a"}],
     }
     assert suggest(snap) == []
+
+
+@pytest.mark.anyio
+@respx.mock
+async def test_dashboard_columns_follow_terminal_width():
+    authorize()
+    _mock_dashboard_box()
+    for width, cols, klass in ((120, 2, "-w2"), (160, 3, "-w3"), (200, 4, "-w4")):
+        app = FbxApp(splash=False)
+        async with app.run_test(size=(width, 40)) as pilot:
+            await _settle(pilot, lambda app=app: "up" in _tile_text(app, "connection"))
+            assert app.screen.has_class(klass), f"width {width}: expected {klass}"
+            grid = app.screen.query_one("#dash-tiles")
+            assert grid.styles.grid_size_columns == cols

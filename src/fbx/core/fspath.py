@@ -28,3 +28,16 @@ def decode(token: str) -> str:
     # Freebox path tokens always decode to an absolute path; anything else is
     # probably a plain string that merely looked like base64.
     return text if text.startswith("/") else token
+
+
+def decode_lenient(token: object) -> str:
+    """`decode` without the absolute-path guard, for VM disk/cd tokens.
+
+    The box stores those relative (`Freebox/VMs/x.qcow2`) as often as
+    absolute, so the guard would bounce legitimate values. Empty → ""."""
+    if not token:
+        return ""
+    try:
+        return base64.b64decode(str(token), validate=True).decode()
+    except (binascii.Error, ValueError, UnicodeDecodeError):
+        return str(token)

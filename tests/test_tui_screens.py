@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 import respx
-from textual.widgets import DataTable, Input, RichLog
+from textual.widgets import DataTable, Input, Static
 
 from fbx.core import fspath
 from fbx.tui.app import FbxApp
@@ -54,7 +54,7 @@ async def test_lan_rename_sends_primary_name():
     # Hosts sort unnamed-first, so the cursor lands on the nameless device —
     # exactly the one a user would label.
     route = mock_write("PUT", "lan/browser/pub/ether-02:00:00:00:00:0b/")
-    app = FbxApp()
+    app = FbxApp(splash=False)
     async with app.run_test(size=(120, 40)) as pilot:
         await _open(pilot, app, "lan", "hosts")
         await pilot.press("n")
@@ -78,7 +78,7 @@ async def test_dhcp_reserves_an_ip():
                                      "mac": "02:00:00:00:00:99"}])
     mock_get("dhcp/dynamic_lease/", [])
     route = mock_write("POST", "dhcp/static_lease/")
-    app = FbxApp()
+    app = FbxApp(splash=False)
     async with app.run_test(size=(120, 40)) as pilot:
         await _open(pilot, app, "dhcp", "static-leases")
         await pilot.press("a")
@@ -105,7 +105,7 @@ async def test_fw_adds_and_toggles_a_rule():
     )
     added = mock_write("POST", "fw/redir/")
     toggled = mock_write("PUT", "fw/redir/3")
-    app = FbxApp()
+    app = FbxApp(splash=False)
     async with app.run_test(size=(120, 40)) as pilot:
         await _open(pilot, app, "fw", "redirs")
         await pilot.press("a")
@@ -134,7 +134,7 @@ async def test_downloads_pause_and_erase():
     _mock_dashboard_box()
     paused = mock_write("PUT", "downloads/1")
     erased = mock_write("DELETE", "downloads/1/erase")
-    app = FbxApp()
+    app = FbxApp(splash=False)
     async with app.run_test(size=(120, 40)) as pilot:
         await _open(pilot, app, "downloads", "tasks")
         # Fixture task is "done" → space resumes it (status downloading).
@@ -155,7 +155,7 @@ async def test_wifi_wps_toggle_and_temp_disable():
     mock_get("wifi/config/", {"enabled": True, "mac_filter_state": "disabled"})
     wps = mock_write("PUT", "wifi/wps/config/")
     disabled = mock_write("POST", "wifi/temp_disable")
-    app = FbxApp()
+    app = FbxApp(splash=False)
     async with app.run_test(size=(120, 40)) as pilot:
         await _open(pilot, app, "wifi", "aps")
         # Fixture has WPS enabled → toggle turns it off (the hygiene suggestion).
@@ -177,7 +177,7 @@ async def test_contacts_add_sends_only_filled_fields():
     _mock_dashboard_box()
     mock_get("contact/", [{"id": 1, "display_name": "Existing"}])
     route = mock_write("POST", "contact/")
-    app = FbxApp()
+    app = FbxApp(splash=False)
     async with app.run_test(size=(120, 40)) as pilot:
         await _open(pilot, app, "contacts", "contacts")
         await pilot.press("a")
@@ -192,7 +192,7 @@ async def test_calls_clear_log_is_gated():
     authorize()
     _mock_dashboard_box()
     route = mock_write("POST", "call/log/delete_all/")
-    app = FbxApp()
+    app = FbxApp(splash=False)
     async with app.run_test(size=(120, 40)) as pilot:
         await _open(pilot, app, "calls", "calls")
         await pilot.press("C")
@@ -214,7 +214,7 @@ async def test_fs_shell_mkdir_and_gated_rm():
     mock_get("fs/ls/", [], startswith=True)
     made = mock_write("POST", "fs/mkdir/")
     removed = mock_write("POST", "fs/rm/", result={"id": 7})
-    app = FbxApp()
+    app = FbxApp(splash=False)
     async with app.run_test(size=(120, 40)) as pilot:
         await _open(pilot, app, "fs")
         await _settle(pilot, lambda: bool(app.screen.query("#fs-input")))
@@ -224,13 +224,15 @@ async def test_fs_shell_mkdir_and_gated_rm():
         await _settle(pilot, lambda: made.called)
         assert sent_json(made) == {"parent": fspath.encode("/"), "dirname": "photos"}
 
+        # The prompt is disabled while a command runs; wait for it back.
+        await _settle(pilot, lambda: not app.screen.query_one("#fs-input", Input).disabled)
         app.screen.query_one("#fs-input", Input).value = "rm /Freebox/old"
         await pilot.press("enter")
         await _confirm_yes(pilot, app)
         await _settle(pilot, lambda: removed.called)
         assert sent_json(removed) == {"files": [fspath.encode("/Freebox/old")]}
-        log_lines = "\n".join(str(line) for line in app.screen.query_one(RichLog).lines)
-        assert "task 7" in log_lines
+        text = str(app.screen.query_one("#fs-scrollback", Static).content)
+        assert "task 7" in text
 
 
 @pytest.mark.anyio
@@ -241,7 +243,7 @@ async def test_vm_hard_stop_is_gated():
     mock_get("vm/info/", {"total_memory": 2048, "used_memory": 1536,
                           "total_cpus": 2, "used_cpus": 2})
     route = mock_write("POST", "vm/0/stop")
-    app = FbxApp()
+    app = FbxApp(splash=False)
     async with app.run_test(size=(120, 40)) as pilot:
         await _open(pilot, app, "vm", "vms")
         # Cursor starts on the first row: vm 0 (running).
@@ -269,7 +271,7 @@ async def test_vm_actions_target_the_visually_selected_row():
          {"id": 1, "name": "vm-one", "status": "stopped"}],
     )
     started = mock_write("POST", "vm/1/start")
-    app = FbxApp()
+    app = FbxApp(splash=False)
     async with app.run_test(size=(120, 40)) as pilot:
         await _open(pilot, app, "vm", "vms")
         # Row 0 shows vm-one (id 1, sorted first) — `s` must start THAT one.
@@ -283,7 +285,7 @@ async def test_downloads_add_url_posts_form():
     authorize()
     _mock_dashboard_box()
     route = mock_write("POST", "downloads/add")
-    app = FbxApp()
+    app = FbxApp(splash=False)
     async with app.run_test(size=(120, 40)) as pilot:
         await _open(pilot, app, "downloads", "tasks")
         await pilot.press("a")

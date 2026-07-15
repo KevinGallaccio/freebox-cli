@@ -11,6 +11,7 @@ from textual.binding import Binding
 
 from ..core.errors import FbxError
 from ..core.runtime import ClientRuntime
+from .prefs import Prefs
 from .support import BoxCallError, human_error
 
 
@@ -29,15 +30,43 @@ class FbxApp(App):
         Binding("escape", "back", "Back", show=False),
     ]
 
-    def __init__(self, *, profile: str = "default", host: str | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        profile: str = "default",
+        host: str | None = None,
+        splash: bool = True,
+    ) -> None:
         super().__init__()
         self.runtime = ClientRuntime(profile=profile, host=host)
         self._last_error: tuple[str, float] | None = None
+        self._show_splash = splash
+        self.prefs = Prefs.load()
+        from .brand import FREEBOX_DARK, FREEBOX_LIGHT
+
+        self.register_theme(FREEBOX_LIGHT)
+        self.register_theme(FREEBOX_DARK)
+        # Before the first frame, so there's no flash of the default theme.
+        # A stale saved name would raise InvalidThemeError, hence the guard;
+        # with nothing (valid) saved, the house theme is the default.
+        saved_theme = self.prefs.get("app.theme")
+        self.theme = (
+            saved_theme if saved_theme in self.available_themes else "freebox-light"
+        )
 
     def on_mount(self) -> None:
         from .screens.dashboard import DashboardScreen
+        from .screens.splash import SplashScreen
 
+        self.theme_changed_signal.subscribe(self, self._remember_theme)
         self.push_screen(DashboardScreen())
+        if self._show_splash:
+            # Over the dashboard, which is already fetching underneath — by
+            # the time the splash pops, the first tiles have real data.
+            self.push_screen(SplashScreen())
+
+    def _remember_theme(self, theme: Any) -> None:
+        self.prefs.set("app.theme", theme.name)
 
     def on_unmount(self) -> None:
         self.runtime.close()

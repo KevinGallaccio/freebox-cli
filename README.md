@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/logo.svg" alt="fbx" width="180">
+</p>
+
 # freebox-cli
 
 Pilotez intégralement votre **Freebox Ultra** (Freebox OS) depuis le
@@ -29,20 +33,32 @@ trois lettres, comme la box. Sans rien installer :
 
 ## L'application
 
-Tapez `fbx` et vous y êtes : un tableau de bord de toute la box — débit WAN
-en direct, radios Wi-Fi, appareils, VMs, stockage, téléchargements,
-téléphone — plus des **suggestions** qui pointent ce qui mérite un coup
-d'œil (WPS resté activé, téléchargements terminés à nettoyer, une VM
-arrêtée, des appareils sans nom…). Naviguez dans chaque domaine, agissez,
-quittez avec `q`. Toute action destructrice demande confirmation.
+Tapez `fbx` et vous y êtes : le logo le temps d'un battement (une touche le
+saute), puis un tableau de bord de toute la box — débit WAN en direct,
+radios Wi-Fi, appareils, VMs, stockage, téléchargements, téléphone — plus
+des **suggestions** qui pointent ce qui mérite un coup d'œil (WPS resté
+activé, téléchargements terminés à nettoyer, une VM arrêtée, des appareils
+sans nom…). Naviguez dans chaque domaine, agissez, quittez avec `q`. Toute
+action destructrice demande confirmation.
 
 ![L'application fbx : tableau de bord avec tuiles en direct et suggestions](docs/screenshot-app.svg)
 
+La grille s'adapte à la largeur du terminal (2 à 4 colonnes), et le thème
+**freebox** — le rouge Free sur les gris clairs, variante sombre incluse —
+se choisit dans la palette (`ctrl+p`) et survit au redémarrage, comme le
+reste de vos préférences (`~/.config/fbx/app.toml`).
+
 Dans l'application : une vue `top` en direct (courbes de débit à la
-seconde, températures, signal Wi-Fi par client), un **shell de fichiers**
-dans le terminal (`/Freebox > ls`, `cd`, `mkdir`, `mv`, `cp`, `rm`,
-`share`), et un écran VM complet qui attache la **console série** sur place
-(Ctrl-] pour détacher, vous revenez dans l'application).
+seconde, températures, signal Wi-Fi par client) ; un **shell de fichiers**
+qui se comporte comme un vrai terminal — invite dans le fil de la sortie,
+**complétion Tab** des commandes et des chemins de la box, historique ↑/↓
+persistant, `ls` riche, `cd -`, `tree` ; et un écran VM complet — panneau
+de détails (disque, MAC, cloud-init), **console série** précédée d'un écran
+préparatoire qui rappelle comment revenir (**Ctrl-T ou Ctrl-]**) et propose
+d'attacher sur place ou d'ouvrir la console **dans sa propre fenêtre de
+terminal** (Warp, iTerm2, Terminal.app), identifiants cloud-init de l'invité
+copiables sans les afficher, et `v` qui ouvre l'écran VNC de la box dans le
+navigateur.
 
 L'application est l'une des trois façades du même cœur — la CLI ci-dessous
 et le serveur MCP restent scriptables à l'octet près ; `fbx` sans argument
@@ -74,6 +90,9 @@ fbx system info          # firmware, modèle, uptime, températures, ventilateur
 Chaque domaine a sa commande, avec tableaux Rich (et `--json` pour les
 scripts) :
 
+<details>
+<summary><strong>Le tour des lectures, domaine par domaine</strong></summary>
+
 ```sh
 fbx connection status    # état WAN, adresses, débit en direct
 fbx connection ftth      # lien optique + puissance SFP (santé de la fibre)
@@ -103,12 +122,17 @@ fbx calls list           # journal d'appels de la ligne fixe
 fbx contacts list        # carnet d'adresses
 ```
 
+</details>
+
 ## Piloter la box
 
 Chaque domaine a aussi ses commandes d'écriture. Les écritures affichent
 une confirmation lisible sur stderr et l'objet de réponse de la box sur
 stdout (compatible `--json`) ; les actions réellement irréversibles
 demandent confirmation, contournable avec `--yes` :
+
+<details>
+<summary><strong>Le tour des écritures, domaine par domaine</strong></summary>
 
 ```sh
 # Réservations DHCP + Wake-on-LAN
@@ -146,11 +170,16 @@ fbx system reboot                      # demande sauf --yes
 fbx contacts add "Sandy Kilo" --first Sandy --last Kilo
 ```
 
+</details>
+
 ## Machines virtuelles
 
 La Freebox Ultra embarque un hyperviseur aarch64. `fbx vm` gère tout le
 cycle de vie — dont une **console série par WebSocket**, comme `virsh
 console` s'attache au tty d'un invité :
+
+<details>
+<summary><strong>Créer, démarrer, attacher, éteindre — le cycle complet</strong></summary>
 
 ```sh
 fbx vm list                            # chaque VM + état, vCPU, RAM
@@ -173,6 +202,8 @@ fbx vm exec 2 "uptime"
 
 fbx vm userdata 2                      # userdata cloud-init brut
 ```
+
+</details>
 
 La console série utilise la dépendance `websockets` incluse ; les chemins
 `--disk`/`--cd` sont absolus (`/Freebox/…`), et `cloudinit_userdata` (qui
@@ -214,8 +245,10 @@ mettre à jour le plugin met à jour le serveur, rien d'autre à rafraîchir :
 Il faut [`uv`](https://astral.sh/uv) dans le PATH, et une box déjà
 appairée (`fbx auth login`, un appui physique).
 
-**N'importe quel client MCP (Claude Desktop, Cursor, Zed, …).** Installez
-avec l'extra `mcp` et pointez votre client sur `fbx mcp serve` :
+<details>
+<summary><strong>N'importe quel client MCP (Claude Desktop, Cursor, Zed, …)</strong></summary>
+
+Installez avec l'extra `mcp` et pointez votre client sur `fbx mcp serve` :
 
 ```sh
 uv tool install 'freebox-cli[mcp]'
@@ -226,8 +259,12 @@ fbx mcp install        # affiche le câblage exact des clients courants
 { "mcpServers": { "fbx": { "command": "fbx", "args": ["mcp", "serve"] } } }
 ```
 
-**Dosez la surface à votre goût.** Tout est exposé par défaut — c'est
-l'opérateur qui décide, pas l'outil :
+</details>
+
+<details>
+<summary><strong>Dosez la surface à votre goût</strong></summary>
+
+Tout est exposé par défaut — c'est l'opérateur qui décide, pas l'outil :
 
 ```sh
 fbx mcp serve --read-only              # aucune écriture
@@ -235,6 +272,8 @@ fbx mcp serve --toolsets vm,wifi       # seulement ces domaines
 fbx mcp serve --exclude raw            # sans la trappe API brute
 fbx mcp tools                          # prévisualise ce qu'expose un filtre
 ```
+
+</details>
 
 ## Le contrat `--json`
 
@@ -264,6 +303,9 @@ fbx api PUT wifi/config/ --data '{"enabled": true}'
 
 ## Feuille de route
 
+<details>
+<summary><strong>Le chemin jusqu'ici, phase par phase</strong></summary>
+
 - [x] Phase 0 — reconnaissance de l'API sur une vraie Freebox Ultra (privée)
 - [x] Phase 1 — découverte, auth, `fbx system info`, `fbx api` (**v0.1.0**)
 - [x] Phase 2 — tous les domaines en lecture, `--json` partout (**v0.2.0**)
@@ -272,7 +314,11 @@ fbx api PUT wifi/config/ --data '{"enabled": true}'
 - [x] Phase 5 — serveur MCP + plugin & skill Claude Code (**v0.5.0**)
 - [x] Phase 6 — PyPI + tap Homebrew + l'application interactive (**v0.6.0**)
 - [x] Phase 7 — dépôt prêt pour les contributions (règles, modèles, protection)
-- [ ] Phase 8 — retours d'usage réel et améliorations UI/UX de l'application
+- [x] Phase 8 — l'application peaufinée sur retours d'usage réel : logo et
+  thèmes freebox, tableau de bord adaptatif, vrai shell de fichiers, console
+  série guidée, préférences persistantes (**v0.7.0**)
+
+</details>
 
 ## Contribuer
 
@@ -304,8 +350,10 @@ Pas besoin de Freebox pour contribuer : les tests mockent la box.
 
 `freebox-cli` gives you full control of the **Freebox Ultra** (the fiber
 router/NAS/hypervisor of French ISP Free) from the terminal: an
-**interactive app** (just type `fbx`: dashboard, live tiles, contextual
-suggestions, confirm-gated actions), a complete scriptable CLI —
+**interactive app** (just type `fbx`: dashboard, live tiles, adaptive
+layout, persistent freebox themes, a files shell with tab-completion and
+history, a guided VM serial console, contextual suggestions, confirm-gated
+actions), a complete scriptable CLI —
 connection, LAN, DHCP, port forwarding, Wi-Fi, downloads, files, telephony,
 and the undocumented **virtual machine manager** with a WebSocket serial
 console — plus an **MCP server** (109 tools) and a Claude Code plugin so AI

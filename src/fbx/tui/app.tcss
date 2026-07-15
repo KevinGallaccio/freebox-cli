@@ -16,14 +16,33 @@
     background: transparent;
 }
 
+#dash-tiles-area {
+    width: 1fr;
+    height: 1fr;
+    /* The grid stops growing at its max-width; center it in what's left. */
+    align-horizontal: center;
+}
+
 #dash-tiles {
     layout: grid;
     grid-size: 2;
+    /* Rows hug their tiles — content flows from the top, no dead bands. */
+    grid-rows: auto;
     grid-gutter: 0 1;
     padding: 0 1;
     width: 1fr;
+    max-width: 190;
     height: 1fr;
     overflow-y: auto;
+}
+
+/* Wider terminal, more columns (breakpoints set on DashboardScreen). */
+DashboardScreen.-w3 #dash-tiles {
+    grid-size: 3;
+}
+
+DashboardScreen.-w4 #dash-tiles {
+    grid-size: 4;
 }
 
 .tile {
@@ -132,25 +151,34 @@ TextModal {
 
 /* ---------- files shell ---------- */
 
-#fs-log {
+#fs-term {
     height: 1fr;
     border: round $panel;
     margin: 0 1;
-}
-
-#fs-prompt-row {
-    height: 3;
     padding: 0 1;
 }
 
+#fs-scrollback {
+    width: 1fr;
+    height: auto;
+}
+
+#fs-prompt-line {
+    height: 1;
+}
+
 #fs-prompt {
-    padding: 1 0;
     color: $accent;
     text-style: bold;
 }
 
-#fs-input {
+/* The input is one bare line in the flow — no chrome, it IS the terminal. */
+#fs-input, #fs-input:focus {
     width: 1fr;
+    height: 1;
+    border: none;
+    padding: 0;
+    background: transparent;
 }
 
 /* ---------- top ---------- */
@@ -181,4 +209,78 @@ TextModal {
     padding: 0 1;
     margin: 0 1;
     height: auto;
+}
+
+/* ---------- splash ---------- */
+
+SplashScreen {
+    align: center middle;
+}
+
+#splash-body {
+    width: auto;
+    height: auto;
+}
+
+#splash-art {
+    /* Brand colors live in the rendered Text itself. */
+    width: auto;
+}
+
+#splash-title {
+    width: 100%;
+    margin-top: 1;
+    text-align: center;
+    text-style: bold;
+}
+
+#splash-hint {
+    width: 100%;
+    margin-top: 1;
+    text-align: center;
+    color: $text-muted;
+}
+
+/* ---------- console pre-flight modal ---------- */
+
+ConsolePreflightModal {
+    align: center middle;
+}
+
+#preflight-box {
+    width: 76;
+    max-width: 90%;
+    height: auto;
+    background: $surface;
+    border: thick $primary;
+    padding: 1 2;
+}
+
+#preflight-title {
+    text-style: bold;
+    padding-bottom: 1;
+}
+
+#preflight-creds {
+    margin-top: 1;
+}
+
+#preflight-buttons {
+    height: auto;
+    align-horizontal: right;
+    margin-top: 1;
+}
+
+#preflight-buttons Button {
+    margin-left: 2;
+}
+
+/* ---------- vm screen ---------- */
+
+#vms {
+    height: 1fr;
+}
+
+#vm-detail {
+    min-height: 3;
 }

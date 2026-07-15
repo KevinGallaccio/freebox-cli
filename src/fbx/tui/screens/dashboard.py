@@ -7,7 +7,7 @@ from collections.abc import Callable
 
 from textual.app import ComposeResult
 from textual.binding import Binding
-from textual.containers import Grid, Horizontal, Vertical
+from textual.containers import Container, Grid, Horizontal, Vertical
 from textual.widgets import Footer, Header, OptionList, Static
 from textual.widgets.option_list import Option
 
@@ -38,6 +38,9 @@ class DashboardScreen(BoxScreen):
     POLL_INTERVAL = 1.0  # fast lane: connection state/rates + system sensors
     SLOW_REFRESH_S = 10.0  # slow lane (lists, suggestions) at most this often
 
+    # Tile columns follow the terminal width (classes drive grid-size in tcss).
+    HORIZONTAL_BREAKPOINTS = [(0, "-w2"), (150, "-w3"), (190, "-w4")]
+
     BINDINGS = [
         Binding("escape", "app.back", "Back", show=False),
     ]
@@ -59,9 +62,10 @@ class DashboardScreen(BoxScreen):
                     *(Option(f"{d.title} — {d.blurb}", id=d.key) for d in DOMAINS.values()),
                     id="dash-menu",
                 )
-            with Grid(id="dash-tiles"):
-                for tile in _TILES:
-                    yield Static("…", id=f"tile-{tile}", classes="tile")
+            with Container(id="dash-tiles-area"):
+                with Grid(id="dash-tiles"):
+                    for tile in _TILES:
+                        yield Static("…", id=f"tile-{tile}", classes="tile")
         with Vertical(id="dash-suggestions-pane"):
             yield Static("Suggestions", classes="pane-title")
             yield OptionList(id="dash-suggestions")

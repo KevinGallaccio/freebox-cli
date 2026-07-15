@@ -2,7 +2,7 @@
 # The distribution is freebox-cli (PyPI refuses "fbx" — admin-prohibited name);
 # the command, import package, and MCP identity all remain `fbx`.
 name = "freebox-cli"
-version = "0.6.0"
+version = "0.7.0"
 description = "The Freebox Ultra from the terminal — interactive app, full CLI, and MCP server"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -29,6 +29,8 @@ dependencies = [
     # The interactive app (`fbx` / `fbx app`) is a headline feature, so its
     # toolkit is a core dependency, not an extra.
     "textual>=8",
+    # The app persists preferences as TOML; stdlib tomllib only reads.
+    "tomli-w>=1",
 ]
 
 [project.urls]
