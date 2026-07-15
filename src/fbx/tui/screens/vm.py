@@ -13,13 +13,10 @@ from textual.screen import ModalScreen
 from textual.widgets import Button, DataTable, Footer, Header, Static
 
 from ...cli import fmt
-
-# Display-only helper shared with the CLI (VM disk paths decode leniently —
-# the box stores them relative, unlike fs paths).
-from ...cli.commands.vm import _disk_display
 from ...core import cloudinit, vmconsole
 from ...core.api import fs, vm
 from ...core.errors import FbxError
+from ...core.fspath import decode_lenient
 from .. import oslaunch
 from ..support import BoxCallError, human_error
 from ..widgets import Field, FormModal, TextModal, cursor_key, refill
@@ -191,7 +188,7 @@ class VmScreen(BoxScreen):
                     Text(status, style=_STATUS_STYLE.get(status, "yellow")),
                     str(v.get("vcpus", "")),
                     fmt.human_bytes((v.get("memory") or 0) * 1024 * 1024),
-                    _disk_display(v.get("disk_path")) or "",
+                    decode_lenient(v.get("disk_path")) or "",
                 )
             )
         refill(self.query_one("#vms", DataTable), rows, list(self._by_id))
@@ -215,7 +212,7 @@ class VmScreen(BoxScreen):
             pane.update("")
             return
         vm_id, item = sel
-        disk = _disk_display(item.get("disk_path"))
+        disk = decode_lenient(item.get("disk_path"))
         size = await self._disk_size(disk) if disk else None
         dinfo = None
         if disk and item.get("status") != "running":
@@ -243,13 +240,16 @@ class VmScreen(BoxScreen):
         return self._disk_sizes[path]
 
     async def _disk_info(self, disk: str) -> dict | None:
-        if disk not in self._disk_infos:
+        # The box stores VM disk paths relative as often as absolute, but
+        # accepts the absolute form on input — normalize (also the cache key).
+        path = "/" + disk.lstrip("/")
+        if path not in self._disk_infos:
             try:
-                info = await self.box(vm.disk_info, disk)
+                info = await self.box(vm.disk_info, path)
             except BoxCallError:
                 info = None
-            self._disk_infos[disk] = info if isinstance(info, dict) else None
-        return self._disk_infos[disk]
+            self._disk_infos[path] = info if isinstance(info, dict) else None
+        return self._disk_infos[path]
 
     def _detail_text(
         self, item: dict, disk: str, size: int | None, dinfo: dict | None
@@ -280,7 +280,7 @@ class VmScreen(BoxScreen):
             line2.append(fmt.human_bytes(dinfo.get("virtual_size")))
         elif item.get("status") == "running":
             line2.append("  ·  virtual size unavailable while running", style="dim")
-        cd = _disk_display(item.get("cd_path"))
+        cd = decode_lenient(item.get("cd_path"))
         if cd:
             label(line2, "  ·  CD")
             line2.append(cd)

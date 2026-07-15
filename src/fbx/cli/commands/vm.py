@@ -2,32 +2,20 @@
 
 from __future__ import annotations
 
-import base64
-import binascii
 from pathlib import Path
 
 import typer
 from rich.table import Table
 
 from ...core import client as core_client
-from ...core import vmconsole
+from ...core import fspath, vmconsole
 from ...core.api import vm as api
 from .. import fmt, ui
 from ._common import fetch
 
-
-def _disk_display(token: object) -> str:
-    """Decode a VM disk/cd base64 path for display.
-
-    Unlike fs paths, the box stores VM disk paths **relative** (no leading `/`,
-    e.g. `Freebox/VMs/x.qcow2`), so `core.fspath.decode`'s absolute-path guard
-    can't render them — decode directly, falling back to the raw token."""
-    if not token:
-        return ""
-    try:
-        return base64.b64decode(str(token), validate=True).decode()
-    except (binascii.Error, ValueError, UnicodeDecodeError):
-        return str(token)
+# VM disk/cd paths are stored relative as often as absolute — the lenient
+# decode lives in core so the TUI shares it without importing the CLI.
+_disk_display = fspath.decode_lenient
 
 app = typer.Typer(help="Virtual machines: lifecycle, disks, and the console.", no_args_is_help=True)
 

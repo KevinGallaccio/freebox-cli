@@ -14,7 +14,7 @@ from textual.widgets import Static
 
 from fbx.core import fspath
 from fbx.tui.app import FbxApp
-from tests.helpers import authorize, mock_get, mock_write
+from tests.helpers import authorize, mock_get, mock_write, sent_json
 from tests.test_tui import _mock_dashboard_box, _settle
 from tests.test_tui_screens import _open
 
@@ -34,12 +34,13 @@ def _mock_vm_screen():
             # Stored relative (no leading /) — the box does both forms.
             {"id": 1, "name": "vm-one", "status": "running", "os": "alpine",
              "vcpus": 1, "memory": 384, "disk_type": "qcow2",
-             "disk_path": fspath.encode("Freebox/VMs/one.qcow2")[0:],
+             "disk_path": fspath.encode("Freebox/VMs/one.qcow2"),
              "cd_path": "", "mac": "02:00:00:00:00:01", "enable_screen": False,
              "enable_cloudinit": True, "cloudinit_hostname": "one"},
+            # Also relative: disk_info must still be asked with the absolute form.
             {"id": 2, "name": "vm-two", "status": "stopped", "os": "debian",
              "vcpus": 2, "memory": 1024, "disk_type": "qcow2",
-             "disk_path": fspath.encode("/Freebox/VMs/two.qcow2"),
+             "disk_path": fspath.encode("Freebox/VMs/two.qcow2"),
              "cd_path": "", "mac": "02:00:00:00:00:02", "enable_screen": True,
              "enable_cloudinit": False},
         ],
@@ -84,6 +85,8 @@ async def test_details_follow_the_cursor_and_use_fs_for_running_vms():
         await _settle(pilot, lambda: "02:00:00:00:00:02" in _detail(app))
         await _settle(pilot, lambda: "virtual" in _detail(app) and disk_info.called)
         assert "5" in _detail(app)  # 5368709120 → 5.0 GB-ish
+        # The stored path is relative; the call must normalize to absolute.
+        assert sent_json(disk_info) == {"disk_path": fspath.encode("/Freebox/VMs/two.qcow2")}
 
         # The hypervisor banner shows MB counts as memory, not raw bytes.
         banner = str(app.screen.query_one("#vm-info", Static).content)
@@ -110,3 +113,11 @@ async def test_vnc_key_opens_freebox_os_or_explains(monkeypatch):
         await pilot.press("v")
         await _settle(pilot, lambda: bool(opened))
         assert opened == ["http://mafreebox.freebox.fr/#Fbx.os.app.vm.app"]
+
+
+def test_decode_lenient_handles_both_stored_path_forms():
+    assert fspath.decode_lenient(fspath.encode("Freebox/VMs/x.qcow2")) == "Freebox/VMs/x.qcow2"
+    assert fspath.decode_lenient(fspath.encode("/Freebox/VMs/x.qcow2")) == "/Freebox/VMs/x.qcow2"
+    assert fspath.decode_lenient("not-base64!") == "not-base64!"
+    assert fspath.decode_lenient("") == ""
+    assert fspath.decode_lenient(None) == ""
