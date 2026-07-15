@@ -1,7 +1,7 @@
 {
   "name": "fbx",
   "displayName": "fbx — Freebox",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "Drive a Freebox (Ultra) from Claude Code: connection, LAN, DHCP, port forwarding, Wi-Fi, files, downloads, and VMs — an MCP server plus a skill that teaches safe usage.",
   "author": { "name": "Kevin Gallaccio", "url": "https://github.com/KevinGallaccio" },
   "homepage": "https://github.com/KevinGallaccio/fbx",
@@ -13,7 +13,7 @@
       "command": "uvx",
       "args": [
         "--from",
-        "fbx[mcp] @ git+https://github.com/KevinGallaccio/fbx",
+        "fbx[mcp] @ file://${CLAUDE_PLUGIN_ROOT}",
         "fbx",
         "mcp",
         "serve"

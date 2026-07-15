@@ -176,9 +176,15 @@ cloud-init userdata, Wi-Fi keys — are **masked** unless the agent passes
 /plugin install fbx@fbx
 ```
 
-The plugin launches the server via `uvx`, so it needs
-[`uv`](https://astral.sh/uv) on your PATH — and your box must already be
-paired (`fbx auth login`, one physical button press).
+The plugin launches the server via `uvx` **from the plugin's own copy of the
+code**, so updating the plugin updates the server — nothing else to refresh:
+
+```
+/plugin marketplace update fbx
+```
+
+It needs [`uv`](https://astral.sh/uv) on your PATH, and your box must already
+be paired (`fbx auth login`, one physical button press).
 
 **Any MCP client (Claude Desktop, Cursor, Zed, …).** Install fbx with the
 `mcp` extra and point your client at `fbx mcp serve`:

@@ -467,6 +467,26 @@ async def test_mcp_read_only_server_hides_writes():
         rt.close()
 
 
+# -- plugin manifest ------------------------------------------------------------
+
+
+def test_plugin_manifest_tracks_the_package():
+    from pathlib import Path
+
+    import fbx
+
+    manifest = json.loads(
+        (Path(__file__).parent.parent / ".claude-plugin" / "plugin.json").read_text()
+    )
+    # The plugin version is what /plugin shows users — it must be the package's.
+    assert manifest["version"] == fbx.__version__
+    # The server must run from the plugin's own copy so plugin updates ARE
+    # server updates (a git+/registry spec here would pin uvx to a stale build).
+    args = manifest["mcpServers"]["fbx"]["args"]
+    assert any("${CLAUDE_PLUGIN_ROOT}" in a for a in args), args
+    assert args[-2:] == ["mcp", "serve"]
+
+
 # -- CLI surface ----------------------------------------------------------------
 
 
