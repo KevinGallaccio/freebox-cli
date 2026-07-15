@@ -1,0 +1,42 @@
+name: Dépendances
+
+# Rafraîchit uv.lock chaque lundi matin et ouvre une PR si quelque chose a
+# bougé. Les tests tournent ICI (le GITHUB_TOKEN ne déclenche pas la CI sur
+# la PR qu'il crée — fermez/rouvrez la PR pour forcer la CI avant merge).
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  refresh-lock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v8.3.2
+      - name: Upgrade the lockfile
+        run: uv lock --upgrade
+      - name: Test against the fresh lock
+        run: |
+          uv sync
+          uv run ruff check src tests scripts
+          uv run pytest
+      - uses: peter-evans/create-pull-request@v8
+        with:
+          branch: deps/uv-lock
+          title: "chore(deps): rafraîchit uv.lock"
+          commit-message: "chore(deps): rafraîchit uv.lock"
+          body: |
+            Mise à jour hebdomadaire automatique du lockfile (`uv lock --upgrade`).
+
+            Les tests et ruff ont tourné **dans le workflow Dépendances** contre
+            ce lock. La CI ne se déclenche pas d'elle-même sur les PR créées par
+            le `GITHUB_TOKEN` : **fermez puis rouvrez cette PR** pour obtenir la
+            coche requise avant de fusionner.
+          labels: dependencies
+          delete-branch: true

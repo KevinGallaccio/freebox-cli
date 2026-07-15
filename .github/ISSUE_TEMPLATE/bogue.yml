@@ -1,0 +1,54 @@
+name: "🐛 Rapport de bogue / Bug report"
+description: "Quelque chose ne fonctionne pas (CLI, application, ou serveur MCP)."
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Merci ! Quelques précautions avant de coller quoi que ce soit :
+        **caviardez vos adresses MAC/IP publiques, SSID et numéros de
+        téléphone**, et ne collez **jamais** le contenu de
+        `~/.config/fbx/credentials.json`.
+        *(English is fine too — describe the bug in whichever language you prefer.)*
+  - type: textarea
+    id: what
+    attributes:
+      label: "Ce qui se passe"
+      description: "Le comportement observé, et en quoi il diffère de ce que vous attendiez."
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: "Comment reproduire"
+      description: "La commande exacte (`fbx …`), ou l'écran de l'application et les touches pressées."
+      placeholder: |
+        fbx wifi stations
+        # ou : application → écran Wi-Fi → touche « s »
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: "Sortie / message d'erreur"
+      description: "Sortie texte, `--json`, ou copie d'écran — caviardée."
+      render: text
+  - type: input
+    id: version
+    attributes:
+      label: "Version de freebox-cli"
+      description: "`fbx --version`"
+      placeholder: "fbx 0.6.0"
+    validations:
+      required: true
+  - type: input
+    id: box
+    attributes:
+      label: "Box et firmware"
+      description: "`fbx system info` → modèle + version du firmware."
+      placeholder: "Freebox Ultra, firmware 4.12.2"
+  - type: input
+    id: os
+    attributes:
+      label: "Système et installation"
+      placeholder: "macOS 26 / brew · Ubuntu 24.04 / uv tool install"

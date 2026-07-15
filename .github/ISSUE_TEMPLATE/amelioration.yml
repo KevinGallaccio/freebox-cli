@@ -1,0 +1,36 @@
+name: "✨ Proposition d'amélioration / Feature request"
+description: "Une idée pour la CLI, l'application, ou le serveur MCP."
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        *(English is fine too.)*
+  - type: textarea
+    id: need
+    attributes:
+      label: "Le besoin"
+      description: "Ce que vous essayez de faire, et ce qui manque aujourd'hui."
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: "La proposition"
+      description: "À quoi ressemblerait la commande, l'écran ou l'outil MCP idéal ?"
+      placeholder: "fbx wifi … / un écran « … » dans l'application / un outil fbx_…"
+  - type: dropdown
+    id: surface
+    attributes:
+      label: "Surface concernée"
+      multiple: true
+      options:
+        - "CLI"
+        - "Application interactive"
+        - "Serveur MCP / agents"
+        - "Autre / je ne sais pas"
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: "Alternatives envisagées"
+      description: "Y compris : est-ce déjà faisable avec `fbx api …` ?"

@@ -271,6 +271,15 @@ fbx api PUT wifi/config/ --data '{"enabled": true}'
 - [x] Phase 4 — cycle de vie VM + console série (**v0.4.0**)
 - [x] Phase 5 — serveur MCP + plugin & skill Claude Code (**v0.5.0**)
 - [x] Phase 6 — PyPI + tap Homebrew + l'application interactive (**v0.6.0**)
+- [x] Phase 7 — dépôt prêt pour les contributions (règles, modèles, protection)
+- [ ] Phase 8 — retours d'usage réel et améliorations UI/UX de l'application
+
+## Contribuer
+
+Les contributions sont bienvenues — tout se développe et se teste **sans
+Freebox** (la suite mocke la box). Lisez [CONTRIBUTING.md](CONTRIBUTING.md) ;
+les failles de sécurité passent par [SECURITY.md](SECURITY.md), jamais par
+une issue publique.
 
 ## Développement
 
