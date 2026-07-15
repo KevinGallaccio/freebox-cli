@@ -161,8 +161,16 @@ def ap_set(
         None, "--channel-width", help="Channel width: 20, 40, 80, 160, 320."
     ),
     enabled: bool | None = typer.Option(None, "--enabled/--disabled", help="Toggle the radio."),
+    he: bool | None = typer.Option(
+        None,
+        "--he/--no-he",
+        help="Wi-Fi 6 (802.11ax). --no-he helps ESP8266-era IoT gear associate on 2.4 GHz.",
+    ),
+    eht: bool | None = typer.Option(
+        None, "--eht/--no-eht", help="Wi-Fi 7 (802.11be) on this radio."
+    ),
 ) -> None:
-    """Change a Wi-Fi radio's channel, width, or enable state."""
+    """Change a Wi-Fi radio's channel, width, generations, or enable state."""
     config: dict = {}
     if channel is not None:
         config["primary_channel"] = channel
@@ -170,8 +178,14 @@ def ap_set(
         config["channel_width"] = channel_width
     if enabled is not None:
         config["enabled"] = enabled
+    if he is not None:
+        config["he"] = {"enabled": he}
+    if eht is not None:
+        config["eht"] = {"enabled": eht}
     if not config:
-        ui.error("nothing to change: pass --channel, --channel-width, and/or --enabled.")
+        ui.error(
+            "nothing to change: pass --channel, --channel-width, --enabled, --he, and/or --eht."
+        )
         raise typer.Exit(1)
     data = fetch(ctx, api.update_ap, ap_id, config)
     ui.emit_write(data, ctx.obj, message=f"updated AP {ap_id}")

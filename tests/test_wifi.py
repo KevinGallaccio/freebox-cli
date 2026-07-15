@@ -288,6 +288,26 @@ def test_ap_set_wraps_config():
 
 
 @respx.mock
+def test_ap_set_he_eht_flags():
+    """--he/--no-he and --eht/--no-eht wrap into nested enable objects — the
+    IoT recipe (`--no-he --no-eht` on the 2.4 GHz radio) as a typed command."""
+    authorize()
+    mock_login()
+    route = mock_write("put", "wifi/ap/", startswith=True, result={"id": 10})
+    result = runner.invoke(app, ["wifi", "ap-set", "10", "--no-he", "--no-eht"])
+    assert result.exit_code == 0
+    assert sent_json(route) == {
+        "config": {"he": {"enabled": False}, "eht": {"enabled": False}}
+    }
+
+    result = runner.invoke(app, ["wifi", "ap-set", "10", "--he", "--eht"])
+    assert result.exit_code == 0
+    assert sent_json(route) == {
+        "config": {"he": {"enabled": True}, "eht": {"enabled": True}}
+    }
+
+
+@respx.mock
 def test_bss_set_wraps_config_key():
     authorize()
     mock_login()
