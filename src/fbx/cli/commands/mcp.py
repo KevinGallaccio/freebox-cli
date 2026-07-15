@@ -54,8 +54,8 @@ def serve(
 ) -> None:
     """Run the MCP server on stdio (an MCP client launches this, not a human).
 
-    Requires the `mcp` extra: `uv tool install 'fbx[mcp]'` (or `pip install
-    'fbx[mcp]'`).
+    Requires the `mcp` extra: `uv tool install 'freebox-cli[mcp]'` (or `pip install
+    'freebox-cli[mcp]'`).
     """
     state: ui.CliState = ctx.obj
     chosen, excluded = _parse_filters(toolsets, exclude)
@@ -63,8 +63,9 @@ def serve(
         from ...mcp import server as mcp_server
     except ImportError as exc:
         ui.error(
-            "the MCP server needs the optional `mcp` dependency. Install fbx "
-            "with the extra: `uv tool install 'fbx[mcp]'` or `pip install 'fbx[mcp]'`."
+            "the MCP server needs the optional `mcp` dependency. Install with "
+            "the extra: `uv tool install 'freebox-cli[mcp]'` or "
+            "`pip install 'freebox-cli[mcp]'`."
         )
         raise typer.Exit(1) from exc
     mcp_server.serve(
@@ -148,7 +149,7 @@ def install(ctx: typer.Context) -> None:
         "[bold]Claude Code (as a plugin, with the fbx skill included)[/] — in claude, run:",
         state,
     )
-    ui.info("  /plugin marketplace add KevinGallaccio/fbx", state)
+    ui.info("  /plugin marketplace add KevinGallaccio/freebox-cli", state)
     ui.info("  /plugin install fbx@fbx", state)
     ui.info("", state)
     ui.info("[bold]Claude Desktop / any MCP client[/] — add to the MCP config:", state)

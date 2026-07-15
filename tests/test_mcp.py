@@ -482,8 +482,9 @@ def test_plugin_manifest_tracks_the_package():
     assert manifest["version"] == fbx.__version__
     # The server must run from the plugin's own copy so plugin updates ARE
     # server updates (a git+/registry spec here would pin uvx to a stale build).
+    # The dist is freebox-cli (PyPI prohibits "fbx"); command/tools stay fbx.
     args = manifest["mcpServers"]["fbx"]["args"]
-    assert any("${CLAUDE_PLUGIN_ROOT}" in a for a in args), args
+    assert "freebox-cli[mcp] @ file://${CLAUDE_PLUGIN_ROOT}" in args, args
     assert args[-2:] == ["mcp", "serve"]
 
 

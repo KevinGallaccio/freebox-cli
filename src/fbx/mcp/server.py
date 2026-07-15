@@ -1,6 +1,6 @@
 """Wire the registry into the MCP protocol over stdio.
 
-The only module that imports the `mcp` SDK (the optional `fbx[mcp]` extra).
+The only module that imports the `mcp` SDK (the optional `freebox-cli[mcp]` extra).
 `list_tools` renders the selected `ToolSpec`s with their safety annotations;
 `call_tool` dispatches through the runtime on a worker thread (the core is
 synchronous httpx). stdout carries the protocol, so nothing here may print —

@@ -1,5 +1,7 @@
 [project]
-name = "fbx"
+# The distribution is freebox-cli (PyPI refuses "fbx" — admin-prohibited name);
+# the command, import package, and MCP identity all remain `fbx`.
+name = "freebox-cli"
 version = "0.6.0"
 description = "The Freebox Ultra from the terminal — interactive app, full CLI, and MCP server"
 readme = "README.md"
@@ -30,10 +32,10 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/KevinGallaccio/fbx"
-Repository = "https://github.com/KevinGallaccio/fbx"
-Issues = "https://github.com/KevinGallaccio/fbx/issues"
-Changelog = "https://github.com/KevinGallaccio/fbx/releases"
+Homepage = "https://github.com/KevinGallaccio/freebox-cli"
+Repository = "https://github.com/KevinGallaccio/freebox-cli"
+Issues = "https://github.com/KevinGallaccio/freebox-cli/issues"
+Changelog = "https://github.com/KevinGallaccio/freebox-cli/releases"
 
 [project.optional-dependencies]
 keyring = ["keyring>=25"]
