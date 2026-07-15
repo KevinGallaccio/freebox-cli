@@ -1,33 +1,47 @@
-# fbx — Freebox Ultra CLI
+# fbx — Freebox Ultra CLI & app
 
-A modern command-line interface for the **Freebox Ultra** (Freebox OS):
-connection status, LAN devices, DHCP, port forwarding, Wi-Fi, downloads,
-VPN, telephony — and the undocumented **virtual machine manager** — plus an
-MCP server so coding agents can drive the box.
-
-> ⚠️ **Early development (v0.5.3).** Working today: discovery, authorization,
-> the read-only view of every major domain, full write control across DHCP,
-> port forwarding/DMZ/UPnP, Wi-Fi, downloads, filesystem, connection, system,
-> calls and contacts, the **virtual-machine manager** (serial console over
-> WebSocket, one-shot `fbx vm exec`) — and the **MCP server + Claude Code
-> plugin**, so a coding agent can drive the box.
+Full control of the **Freebox Ultra** (Freebox OS) from the terminal:
+an **interactive app** you open with a bare `fbx`, a complete scriptable
+CLI, and an MCP server so coding agents can drive the box — connection,
+LAN, DHCP, port forwarding, Wi-Fi, downloads, files, telephony, and the
+undocumented **virtual machine manager**.
 
 **Unofficial.** This project is not affiliated with Free or the Iliad group.
 
 ## Install
 
-`fbx` is on [PyPI](https://pypi.org/project/fbx/). With
-[`uv`](https://astral.sh/uv) (or `pipx`), on a machine on the same LAN as
+With [Homebrew](https://brew.sh), or from [PyPI](https://pypi.org/project/fbx/)
+with [`uv`](https://astral.sh/uv) / `pipx`, on a machine on the same LAN as
 your Freebox:
 
 ```sh
+brew install kevingallaccio/tap/fbx
+# or
 uv tool install fbx        # or: pipx install fbx
-fbx --version
 ```
 
 One-off runs work without installing anything: `uvx fbx system info`.
-A Homebrew tap (`brew install kevingallaccio/tap/fbx`) lands later in
-Phase 6, alongside the interactive app.
+
+## The app
+
+Type `fbx` and you're in: a dashboard of the whole box — live WAN
+throughput, radios, devices, VMs, storage, downloads, phone — plus
+**suggestions** pointing at things worth doing (WPS left on, finished
+downloads to clean up, a stopped VM, unnamed devices…). Navigate into any
+domain, act, and quit with `q`. Anything destructive asks first.
+
+![The fbx app: dashboard with live tiles and suggestions](docs/screenshot-app.svg)
+
+Inside the app: a live `top`-style view (1 s throughput sparklines,
+temperatures, per-client Wi-Fi signal), a **terminal-in-terminal file
+shell** (`/Freebox > ls`, `cd`, `mkdir`, `mv`, `cp`, `rm`, `share`), and a
+full VM screen that attaches the **serial console** right in place
+(Ctrl-] detaches, you're back in the app).
+
+The app is one of three faces over the same core — the CLI below and the
+MCP server stay byte-for-byte scriptable; `fbx` with no arguments only
+opens the app on a real terminal (piped, it prints help exactly like
+before).
 
 ## Getting started
 
@@ -241,7 +255,7 @@ fbx api PUT wifi/config/ --data '{"enabled": true}'
 - [x] Phase 3 — write operations across every domain (**v0.3.0**)
 - [x] Phase 4 — VM lifecycle + serial console (**v0.4.0**)
 - [x] Phase 5 — MCP server + Claude Code plugin & skill (**v0.5.0**)
-- [ ] Phase 6 — PyPI ✅, Homebrew tap, and the interactive app (*in progress*)
+- [x] Phase 6 — PyPI + Homebrew tap + the interactive app (**v0.6.0**)
 
 ## Development
 
@@ -265,16 +279,20 @@ without one can work on the whole thing.
 
 ## Français
 
-`fbx` est une interface en ligne de commande pour la **Freebox Ultra**
-(Freebox OS) : état de la connexion, appareils du réseau local, DHCP,
-redirections de ports, Wi-Fi, téléchargements, VPN, téléphonie — et le
-gestionnaire de **machines virtuelles** (API non documentée) — ainsi qu'un
-serveur MCP pour les agents de code.
+`fbx` pilote la **Freebox Ultra** (Freebox OS) depuis le terminal : une
+**application interactive** (tapez `fbx` : tableau de bord, suggestions,
+navigation dans tous les domaines), une CLI scriptable complète — état de
+la connexion, appareils du réseau local, DHCP, redirections de ports,
+Wi-Fi, téléchargements, fichiers, téléphonie, et le gestionnaire de
+**machines virtuelles** (API non documentée) — ainsi qu'un serveur MCP
+pour les agents de code.
 
 ### Démarrage
 
 ```sh
+brew install kevingallaccio/tap/fbx   # ou : uv tool install fbx
 fbx auth login       # autorisation unique — appuyez sur ▶ sur la Freebox
+fbx                  # l'application interactive
 fbx system info      # état de la box
 fbx --json api GET connection/ | jq
 ```
