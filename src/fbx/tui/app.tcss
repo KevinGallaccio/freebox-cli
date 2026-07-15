@@ -275,3 +275,13 @@ ConsolePreflightModal {
 #preflight-buttons Button {
     margin-left: 2;
 }
+
+/* ---------- vm screen ---------- */
+
+#vms {
+    height: 1fr;
+}
+
+#vm-detail {
+    min-height: 3;
+}

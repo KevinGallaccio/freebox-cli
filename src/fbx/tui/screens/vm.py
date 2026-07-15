@@ -13,8 +13,12 @@ from textual.screen import ModalScreen
 from textual.widgets import Button, DataTable, Footer, Header, Static
 
 from ...cli import fmt
+
+# Display-only helper shared with the CLI (VM disk paths decode leniently —
+# the box stores them relative, unlike fs paths).
+from ...cli.commands.vm import _disk_display
 from ...core import cloudinit, vmconsole
-from ...core.api import vm
+from ...core.api import fs, vm
 from ...core.errors import FbxError
 from .. import oslaunch
 from ..support import BoxCallError, human_error
@@ -117,6 +121,7 @@ class VmScreen(BoxScreen):
         Binding("K", "stop", "Hard stop"),
         Binding("D", "delete", "Delete"),
         Binding("c", "console", "Console"),
+        Binding("v", "vnc", "VNC screen"),
         Binding("x", "exec", "Exec…"),
         Binding("u", "userdata", "cloud-init"),
     ]
@@ -124,11 +129,15 @@ class VmScreen(BoxScreen):
     def __init__(self) -> None:
         super().__init__()
         self._by_id: dict[str, dict] = {}
+        # Per-disk caches for the details pane (both survive the 3 s poll).
+        self._disk_sizes: dict[str, int | None] = {}
+        self._disk_infos: dict[str, dict | None] = {}
 
     def compose(self) -> ComposeResult:
         yield Header()
         yield Static("…", id="vm-info", classes="panel")
         yield DataTable(id="vms", cursor_type="row")
+        yield Static("", id="vm-detail", classes="panel")
         yield Footer()
 
     def on_mount(self) -> None:
@@ -139,7 +148,9 @@ class VmScreen(BoxScreen):
 
     async def refresh_data(self) -> None:
         info = await self.box(vm.info)
-        total_mem, used_mem = info.get("total_memory"), info.get("used_memory")
+        # vm/info memory counts are MB, not bytes.
+        total_mem = (info.get("total_memory") or 0) * 1024 * 1024
+        used_mem = (info.get("used_memory") or 0) * 1024 * 1024
         self.query_one("#vm-info", Static).update(
             f"Hypervisor: {info.get('used_cpus', '?')}/{info.get('total_cpus', '?')} vCPUs · "
             f"{fmt.human_bytes(used_mem)} / {fmt.human_bytes(total_mem)} memory in use"
@@ -160,16 +171,112 @@ class VmScreen(BoxScreen):
                     Text(status, style=_STATUS_STYLE.get(status, "yellow")),
                     str(v.get("vcpus", "")),
                     fmt.human_bytes((v.get("memory") or 0) * 1024 * 1024),
-                    str(v.get("disk_path") or ""),
+                    _disk_display(v.get("disk_path")) or "",
                 )
             )
         refill(self.query_one("#vms", DataTable), rows, list(self._by_id))
+        self._show_detail()
 
     def _selected(self) -> tuple[int, dict] | None:
         vm_id = cursor_key(self.query_one("#vms", DataTable))
         if vm_id is None:
             return None
         return int(vm_id), self._by_id.get(vm_id, {})
+
+    # -- details pane -----------------------------------------------------------
+
+    def on_data_table_row_highlighted(self, event: DataTable.RowHighlighted) -> None:
+        self._show_detail()
+
+    @work(exclusive=True, group="vm-detail")
+    async def _show_detail(self) -> None:
+        pane = self.query_one("#vm-detail", Static)
+        if (sel := self._selected()) is None:
+            pane.update("")
+            return
+        vm_id, item = sel
+        disk = _disk_display(item.get("disk_path"))
+        size = await self._disk_size(disk) if disk else None
+        dinfo = None
+        if disk and item.get("status") != "running":
+            # Verified live: the box refuses vm/disk/info while the disk is
+            # attached to a running VM — only stopped VMs get virtual size.
+            dinfo = await self._disk_info(disk)
+        # The cursor may have moved while we were fetching.
+        if (again := self._selected()) is None or again[0] != vm_id:
+            return
+        pane.update(self._detail_text(item, disk, size, dinfo))
+
+    async def _disk_size(self, disk: str) -> int | None:
+        """Bytes the image occupies on the box, via fs (works while running)."""
+        path = "/" + disk.lstrip("/")
+        if path not in self._disk_sizes:
+            parent, _, name = path.rpartition("/")
+            try:
+                listing = await self.box(fs.ls, parent or "/")
+            except BoxCallError:
+                self._disk_sizes[path] = None
+            else:
+                sizes = {str(e.get("name")): e.get("size") for e in fs.entries(listing)}
+                size = sizes.get(name)
+                self._disk_sizes[path] = int(size) if isinstance(size, int) else None
+        return self._disk_sizes[path]
+
+    async def _disk_info(self, disk: str) -> dict | None:
+        if disk not in self._disk_infos:
+            try:
+                info = await self.box(vm.disk_info, disk)
+            except BoxCallError:
+                info = None
+            self._disk_infos[disk] = info if isinstance(info, dict) else None
+        return self._disk_infos[disk]
+
+    def _detail_text(
+        self, item: dict, disk: str, size: int | None, dinfo: dict | None
+    ) -> Text:
+        def label(text: Text, name: str) -> None:
+            text.append(f"{name} ", style="dim")
+
+        line1 = Text()
+        label(line1, "OS")
+        line1.append(str(item.get("os") or "?"))
+        label(line1, "  ·  MAC")
+        line1.append(str(item.get("mac") or "—"))
+        label(line1, "  ·  screen (VNC)")
+        line1.append(
+            "yes — v opens Freebox OS" if item.get("enable_screen") else "no"
+        )
+
+        line2 = Text()
+        label(line2, "Disk")
+        line2.append(disk or "—")
+        if item.get("disk_type"):
+            line2.append(f" ({item.get('disk_type')})", style="dim")
+        if size is not None:
+            label(line2, "  —  on box")
+            line2.append(fmt.human_bytes(size))
+        if dinfo and dinfo.get("virtual_size") is not None:
+            label(line2, "  ·  virtual")
+            line2.append(fmt.human_bytes(dinfo.get("virtual_size")))
+        elif item.get("status") == "running":
+            line2.append("  ·  virtual size unavailable while running", style="dim")
+        cd = _disk_display(item.get("cd_path"))
+        if cd:
+            label(line2, "  ·  CD")
+            line2.append(cd)
+
+        line3 = Text()
+        label(line3, "cloud-init")
+        if item.get("enable_cloudinit"):
+            line3.append("yes")
+            if item.get("cloudinit_hostname"):
+                label(line3, " — host")
+                line3.append(str(item.get("cloudinit_hostname")))
+            line3.append("  (u shows userdata)", style="dim")
+        else:
+            line3.append("no")
+
+        return Text("\n").join([line1, line2, line3])
 
     # -- lifecycle ------------------------------------------------------------
 
@@ -234,6 +341,31 @@ class VmScreen(BoxScreen):
             return
         self.notify(f"VM {name} deleted (disk kept).", severity="warning")
         self.run_refresh()
+
+    def action_vnc(self) -> None:
+        """The box's own VNC view, in the browser (no native client — issue #3).
+
+        `#Fbx.os.app.vm.app` is Freebox OS's hash route for the VM app
+        (discovered in its bundle: opening an app sets `#<className>`, and a
+        hash on load reopens it); the screen window itself has no route.
+        """
+        if (sel := self._selected()) is None:
+            return
+        vm_id, item = sel
+        name = item.get("name") or vm_id
+        if not item.get("enable_screen"):
+            self.notify(
+                f"{name} has no screen: enable_screen is off in its config, so "
+                "the box runs it headless (serial console only).",
+                severity="warning",
+                timeout=8,
+            )
+            return
+        import webbrowser
+
+        host = self.app.runtime.host or "mafreebox.freebox.fr"
+        webbrowser.open(f"http://{host}/#Fbx.os.app.vm.app")
+        self.notify(f"Freebox OS opens in the browser — VMs → {name} → écran.")
 
     # -- console / exec / userdata ---------------------------------------------
 
