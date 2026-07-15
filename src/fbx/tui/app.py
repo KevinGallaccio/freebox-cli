@@ -1,0 +1,76 @@
+"""FbxApp — open once, navigate, act, quit."""
+
+from __future__ import annotations
+
+import asyncio
+import time
+from typing import Any
+
+from textual.app import App
+from textual.binding import Binding
+
+from ..core.errors import FbxError
+from ..core.runtime import ClientRuntime
+from .support import BoxCallError, human_error
+
+
+class FbxApp(App):
+    """The application shell: one shared box connection, a screen stack."""
+
+    TITLE = "fbx"
+    CSS_PATH = "app.tcss"
+
+    # Identical error toasts repeat at most once per this many seconds — a
+    # 1 Hz poll against an unreachable box must not stack notifications.
+    ERROR_DEDUPE_S = 30.0
+
+    BINDINGS = [
+        Binding("q", "quit", "Quit"),
+        Binding("escape", "back", "Back", show=False),
+    ]
+
+    def __init__(self, *, profile: str = "default", host: str | None = None) -> None:
+        super().__init__()
+        self.runtime = ClientRuntime(profile=profile, host=host)
+        self._last_error: tuple[str, float] | None = None
+
+    def on_mount(self) -> None:
+        from .screens.dashboard import DashboardScreen
+
+        self.push_screen(DashboardScreen())
+
+    def on_unmount(self) -> None:
+        self.runtime.close()
+
+    async def box(self, fn: Any, *args: Any, **kwargs: Any) -> Any:
+        """Run one core.api call off-thread (the runtime lock serializes).
+
+        On failure: toast the human message once, then raise `BoxCallError`
+        so the caller can keep its last good data without re-reporting.
+        """
+        try:
+            return await asyncio.to_thread(self.runtime.call, fn, *args, **kwargs)
+        except FbxError as exc:
+            self._toast_error(human_error(exc))
+            raise BoxCallError(str(exc)) from exc
+
+    def _toast_error(self, message: str) -> None:
+        now = time.monotonic()
+        if (
+            self._last_error
+            and self._last_error[0] == message
+            and now - self._last_error[1] < self.ERROR_DEDUPE_S
+        ):
+            return
+        self._last_error = (message, now)
+        self.notify(message, title="Box error", severity="error", timeout=8)
+
+    def open_domain(self, key: str) -> None:
+        from .screens import DOMAINS
+
+        self.push_screen(DOMAINS[key].factory())
+
+    def action_back(self) -> None:
+        # Stack bottom is textual's default screen + the dashboard; never pop those.
+        if len(self.screen_stack) > 2:
+            self.pop_screen()

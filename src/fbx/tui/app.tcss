@@ -1,0 +1,89 @@
+/* ---------- dashboard ---------- */
+
+#dash-body {
+    height: 1fr;
+}
+
+#dash-menu-pane {
+    width: 38;
+    padding: 0 1;
+    border-right: solid $panel;
+}
+
+#dash-menu {
+    height: 1fr;
+    border: none;
+    background: transparent;
+}
+
+#dash-tiles {
+    layout: grid;
+    grid-size: 2;
+    grid-gutter: 0 1;
+    padding: 0 1;
+    width: 1fr;
+    height: 1fr;
+    overflow-y: auto;
+}
+
+.tile {
+    border: round $panel;
+    padding: 0 1;
+    height: auto;
+}
+
+.pane-title {
+    text-style: bold;
+    color: $accent;
+    padding: 0 1;
+}
+
+#dash-suggestions-pane {
+    height: auto;
+    max-height: 10;
+    border-top: solid $panel;
+}
+
+#dash-suggestions {
+    height: auto;
+    max-height: 8;
+    border: none;
+    background: transparent;
+}
+
+/* ---------- confirm modal ---------- */
+
+ConfirmModal {
+    align: center middle;
+}
+
+#confirm-box {
+    width: 64;
+    max-width: 90%;
+    height: auto;
+    background: $surface;
+    border: thick $error;
+    padding: 1 2;
+}
+
+#confirm-message {
+    padding-bottom: 1;
+}
+
+#confirm-buttons {
+    height: auto;
+    align-horizontal: right;
+}
+
+#confirm-buttons Button {
+    margin-left: 2;
+}
+
+/* ---------- shared ---------- */
+
+.panel {
+    border: round $panel;
+    padding: 0 1;
+    margin: 0 1;
+    height: auto;
+}

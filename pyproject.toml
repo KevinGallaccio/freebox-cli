@@ -24,6 +24,9 @@ dependencies = [
     "platformdirs>=4.2",
     "zeroconf>=0.132",
     "websockets>=13",
+    # The interactive app (`fbx` / `fbx app`) is a headline feature, so its
+    # toolkit is a core dependency, not an extra.
+    "textual>=8",
 ]
 
 [project.urls]
@@ -35,7 +38,6 @@ Changelog = "https://github.com/KevinGallaccio/fbx/releases"
 [project.optional-dependencies]
 keyring = ["keyring>=25"]
 mcp = ["mcp>=1.2"]
-tui = ["textual>=0.60"]
 
 [project.scripts]
 fbx = "fbx.cli.main:main"

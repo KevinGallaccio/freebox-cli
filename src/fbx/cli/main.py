@@ -19,6 +19,7 @@ from ..core.errors import (
 )
 from . import ui
 from .commands import api as api_cmd
+from .commands import app as app_cmd_module
 from .commands import auth as auth_cmd
 from .commands import calls as calls_cmd
 from .commands import connection as connection_cmd
@@ -37,7 +38,6 @@ from .commands import wifi as wifi_cmd
 app = typer.Typer(
     name="fbx",
     help="Freebox Ultra CLI — manage your box, your network, and your VMs.",
-    no_args_is_help=True,
     add_completion=False,
     rich_markup_mode="rich",
 )
@@ -85,7 +85,7 @@ def _version_callback(value: bool) -> None:
         raise typer.Exit()
 
 
-@app.callback()
+@app.callback(invoke_without_command=True)
 def main_callback(
     ctx: typer.Context,
     profile: str = typer.Option(
@@ -134,8 +134,22 @@ def main_callback(
     root.addHandler(handler)
     root.setLevel(level)
 
+    # Bare `fbx` on a terminal opens the interactive app; anywhere else
+    # (pipes, scripts) it keeps the historical help-and-exit-2 behavior.
+    if ctx.invoked_subcommand is None:
+        import sys
+
+        from .commands import app as app_cmd
+
+        if sys.stdout.isatty() and sys.stdin.isatty():
+            app_cmd.launch(state)
+        else:
+            typer.echo(ctx.get_help())
+            raise typer.Exit(2)
+
 
 app.add_typer(auth_cmd.app, name="auth")
+app_cmd_module.register(app)
 system_cmd.register(app)
 api_cmd.register(app)
 calls_cmd.register(app)
