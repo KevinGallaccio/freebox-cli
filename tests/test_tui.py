@@ -178,14 +178,17 @@ async def test_reboot_needs_confirmation_and_posts():
 # -- entry points ---------------------------------------------------------------
 
 
-def test_bare_fbx_without_tty_prints_help():
+def test_bare_fbx_without_tty_prints_help_like_before():
+    """Piped bare `fbx` keeps the v0.5.2 no_args_is_help contract, verified
+    empirically against that tag: help on STDOUT, exit 2. (Typer's rich help
+    always rendered to stdout — only the rendering path changed here.)"""
     from typer.testing import CliRunner
 
     from fbx.cli.main import app as cli_app
 
     result = CliRunner().invoke(cli_app, [])
     assert result.exit_code == 2
-    assert "Usage" in result.output
+    assert "Usage" in result.stdout
 
 
 # -- suggestions rules ------------------------------------------------------------

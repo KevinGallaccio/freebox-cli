@@ -59,10 +59,13 @@ class VmScreen(BoxScreen):
             f"{fmt.human_bytes(used_mem)} / {fmt.human_bytes(total_mem)} memory in use"
         )
 
-        vms = await self.box(vm.list_vms)
+        # One sorted list feeds BOTH the rows and the key list: refill() zips
+        # them positionally, so any ordering divergence would pair a row with
+        # a different VM's id — and route actions at the wrong VM.
+        vms = sorted(await self.box(vm.list_vms), key=lambda v: v.get("id", 0))
         self._by_id = {str(v.get("id")): v for v in vms}
         rows = []
-        for v in sorted(vms, key=lambda v: v.get("id", 0)):
+        for v in vms:
             status = str(v.get("status") or "")
             rows.append(
                 (

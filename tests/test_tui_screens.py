@@ -252,6 +252,33 @@ async def test_vm_hard_stop_is_gated():
 
 @pytest.mark.anyio
 @respx.mock
+async def test_vm_actions_target_the_visually_selected_row():
+    """Regression (review finding): the box's vm listing order is not
+    guaranteed id-ascending; rows are displayed sorted, so the row keys must
+    come from the SAME sorted sequence or actions hit the wrong VM."""
+    authorize()
+    _mock_dashboard_box()
+    # Out-of-order listing: id 5 first (replaces the dashboard fixture's
+    # vm/ route — respx dedupes same-pattern routes). Sorted display puts
+    # id 1 on row 0.
+    mock_get("vm/info/", {"total_memory": 2048, "used_memory": 512,
+                          "total_cpus": 2, "used_cpus": 1})
+    mock_get(
+        "vm/",
+        [{"id": 5, "name": "vm-five", "status": "stopped"},
+         {"id": 1, "name": "vm-one", "status": "stopped"}],
+    )
+    started = mock_write("POST", "vm/1/start")
+    app = FbxApp()
+    async with app.run_test(size=(120, 40)) as pilot:
+        await _open(pilot, app, "vm", "vms")
+        # Row 0 shows vm-one (id 1, sorted first) — `s` must start THAT one.
+        await pilot.press("s")
+        await _settle(pilot, lambda: started.called)
+
+
+@pytest.mark.anyio
+@respx.mock
 async def test_downloads_add_url_posts_form():
     authorize()
     _mock_dashboard_box()

@@ -144,7 +144,12 @@ def main_callback(
         if sys.stdout.isatty() and sys.stdin.isatty():
             app_cmd.launch(state)
         else:
-            typer.echo(ctx.get_help())
+            # The historical no_args_is_help contract, verified against
+            # v0.5.2: help on STDOUT, exit 2. (In rich markup mode
+            # ctx.get_help() prints as a side effect and returns "".)
+            help_text = ctx.get_help()
+            if help_text:
+                typer.echo(help_text)
             raise typer.Exit(2)
 
 

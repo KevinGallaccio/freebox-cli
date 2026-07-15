@@ -40,11 +40,15 @@ class Fbx < Formula
   depends_on "python@{python}"
 
   def install
-    venv = virtualenv_create(libexec, "python{python}")
+    virtualenv_create(libexec, "python{python}")
     # Install the pinned release from PyPI with normal pip resolution so
     # compiled dependencies (pydantic-core, zeroconf, rpds-py) come as
     # wheels instead of multi-minute source builds needing a rust toolchain.
-    system libexec/"bin/pip", "install", "fbx[mcp]==#{{version}}"
+    # (Verified: pip reaches PyPI inside brew's build sandbox — the no-network
+    # rule is homebrew-core policy, not a mechanical restriction.)
+    # NB: virtualenv_create makes the venv --without-pip; pip is reachable
+    # only as a module through the brewed python's site-packages.
+    system libexec/"bin/python", "-m", "pip", "install", "fbx[mcp]==#{{version}}"
     bin.install_symlink libexec/"bin/fbx"
   end
 
@@ -76,7 +80,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--version", required=True, help="fbx release version (no leading v)")
     parser.add_argument("--out", required=True, type=Path, help="path to write fbx.rb")
-    parser.add_argument("--python", default="3.13", help="brew python@X.Y the venv uses")
+    parser.add_argument("--python", default="3.14", help="brew python@X.Y the venv uses")
     args = parser.parse_args()
 
     sdist_url, sdist_sha256 = sdist_of(args.version)
