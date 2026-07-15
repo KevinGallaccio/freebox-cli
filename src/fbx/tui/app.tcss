@@ -223,9 +223,8 @@ SplashScreen {
 }
 
 #splash-art {
+    /* Brand colors live in the rendered Text itself. */
     width: auto;
-    color: $accent;
-    text-style: bold;
 }
 
 #splash-title {

@@ -7,6 +7,7 @@ just covers the first placeholders, and any key skips it.
 
 from __future__ import annotations
 
+from rich.text import Text
 from textual import events
 from textual.app import ComposeResult
 from textual.containers import Vertical
@@ -14,26 +15,19 @@ from textual.screen import Screen
 from textual.widgets import Static
 
 from ... import __version__
-
-# The Freebox « f », redrawn as what the box means to us: a vertical of
-# square pixels crossed by the fiber itself, one pulse of light on the line.
-_ART = """\
-    ▄▄▄▄▄▄
-   ██▀▀▀▀▀
-   ██
-━━━██━━━━━━━━━●
-   ██
-   ██
-   ▀▀"""
+from ..brand import FREE_RED, logo
 
 
 class SplashScreen(Screen):
     DURATION = 1.0  # classvar so tests can shrink the beat
 
     def compose(self) -> ComposeResult:
+        title = Text.assemble(
+            ("fbx", f"bold {FREE_RED}"), (" · ", "dim"), (f"v{__version__}", "bold")
+        )
         with Vertical(id="splash-body"):
-            yield Static(_ART, id="splash-art")
-            yield Static(f"fbx · v{__version__}", id="splash-title")
+            yield Static(logo(), id="splash-art")
+            yield Static(title, id="splash-title")
             yield Static("press any key", id="splash-hint")
 
     def on_mount(self) -> None:

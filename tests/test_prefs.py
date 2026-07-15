@@ -114,3 +114,17 @@ async def test_fs_last_dir_survives_relaunch():
         await _settle(pilot, lambda: bool(relaunched.screen.query("#fs-prompt")))
         prompt = str(relaunched.screen.query_one("#fs-prompt", Label).content)
         assert prompt == "/Freebox > "
+
+
+@pytest.mark.anyio
+@respx.mock
+async def test_the_house_theme_is_the_default_until_a_choice_is_saved():
+    authorize()
+    _mock_dashboard_box()
+    assert FbxApp(splash=False).theme == "freebox"
+
+    app = FbxApp(splash=False)
+    async with app.run_test(size=(120, 40)) as pilot:
+        app.theme = "textual-dark"
+        await _settle(pilot, lambda: Prefs.load().get("app.theme") == "textual-dark")
+    assert FbxApp(splash=False).theme == "textual-dark"
