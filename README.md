@@ -212,8 +212,8 @@ dans un tableau.
 
 ## Serveur MCP — laissez un agent piloter la box
 
-`fbx mcp serve` expose toute la surface (109 outils répartis en 13
-ensembles : system, connection, lan, dhcp, fw, wifi, downloads, files,
+`fbx mcp serve` expose toute la surface (111 outils répartis en 14
+ensembles : auth, system, connection, lan, dhcp, fw, wifi, downloads, files,
 calls, contacts, storage, vm, raw) en serveur
 [MCP](https://modelcontextprotocol.io) sur stdio. Même cœur que la CLI,
 donc comportement identique ; les opérations destructrices portent les
@@ -242,11 +242,23 @@ mettre à jour le plugin met à jour le serveur, rien d'autre à rafraîchir :
 /plugin marketplace update fbx
 ```
 
-Il faut [`uv`](https://astral.sh/uv) dans le PATH, et une box déjà
-appairée (`fbx auth login`, un appui physique).
+Il faut [`uv`](https://astral.sh/uv) dans le PATH, et une box appairée —
+`fbx auth login` dans un terminal, ou laissez l'agent guider l'appairage
+(`fbx_auth_enroll`) et allez appuyer sur ▶ quand il vous le dit : rien
+n'est accordé sans cet appui physique.
+
+**Claude Desktop (chat) — l'extension `.mcpb`.** Le chat de Claude Desktop
+ne charge pas les plugins Claude Code (ils vivent dans les sessions Code et
+Cowork) ; il voit en revanche les **connecteurs**. L'extension comble ce
+trou : téléchargez `freebox-cli.mcpb` depuis la [dernière
+release](https://github.com/KevinGallaccio/freebox-cli/releases),
+double-cliquez (ou Réglages → Extensions), activez fbx dans le menu outils
+de la conversation. Seul prérequis : `uv`. Box pas encore appairée ?
+Demandez à Claude d'appairer — l'outil `fbx_auth_enroll` vous enverra
+appuyer sur ▶.
 
 <details>
-<summary><strong>N'importe quel client MCP (Claude Desktop, Cursor, Zed, …)</strong></summary>
+<summary><strong>N'importe quel client MCP (Cursor, Zed, …)</strong></summary>
 
 Installez avec l'extra `mcp` et pointez votre client sur `fbx mcp serve` :
 
@@ -356,8 +368,8 @@ history, a guided VM serial console, contextual suggestions, confirm-gated
 actions), a complete scriptable CLI —
 connection, LAN, DHCP, port forwarding, Wi-Fi, downloads, files, telephony,
 and the undocumented **virtual machine manager** with a WebSocket serial
-console — plus an **MCP server** (109 tools) and a Claude Code plugin so AI
-agents can drive the box.
+console — plus an **MCP server** (111 tools) with a Claude Code plugin and a
+Claude Desktop extension so AI agents can drive the box.
 
 ```sh
 brew install kevingallaccio/tap/freebox-cli   # or: uv tool install freebox-cli
@@ -367,10 +379,14 @@ fbx system info      # scriptable CLI, --json everywhere
 fbx --json api GET connection/ | jq
 ```
 
-For agents: `fbx mcp serve`, or in Claude Code
+For agents: `fbx mcp serve`; in Claude Code
 `/plugin marketplace add KevinGallaccio/freebox-cli` then
-`/plugin install fbx@fbx`. Data on stdout, everything else on stderr;
-destructive operations prompt (bypass with `--yes`).
+`/plugin install fbx@fbx`; in Claude Desktop **chat**, install
+`freebox-cli.mcpb` from the latest release (plugins only load in Code/Cowork
+sessions — the extension is what plain chat sees). Unpaired box? Ask Claude:
+the `fbx_auth_enroll` tool walks the user through the ▶-button pairing.
+Data on stdout, everything else on stderr; destructive operations prompt
+(bypass with `--yes`).
 
 The full documentation above is in French — the Freebox only exists in
 France. **Unofficial:** this project is not affiliated with Free or the
