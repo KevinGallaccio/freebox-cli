@@ -43,6 +43,7 @@ class LanScreen(BoxScreen):
         yield Footer()
 
     def on_mount(self) -> None:
+        self._show_all = self.app.prefs.get("screens.lan.show") == "all"
         self.query_one("#hosts", DataTable).add_columns(
             "", "Name", "IPv4", "MAC", "Type", "Last seen"
         )
@@ -72,6 +73,7 @@ class LanScreen(BoxScreen):
 
     def action_toggle_all(self) -> None:
         self._show_all = not self._show_all
+        self.app.prefs.set("screens.lan.show", "all" if self._show_all else "active")
         self.run_refresh()
 
     @work

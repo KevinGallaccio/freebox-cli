@@ -11,6 +11,7 @@ from textual.binding import Binding
 
 from ..core.errors import FbxError
 from ..core.runtime import ClientRuntime
+from .prefs import Prefs
 from .support import BoxCallError, human_error
 
 
@@ -33,11 +34,21 @@ class FbxApp(App):
         super().__init__()
         self.runtime = ClientRuntime(profile=profile, host=host)
         self._last_error: tuple[str, float] | None = None
+        self.prefs = Prefs.load()
+        # Before the first frame, so there's no flash of the default theme.
+        # A stale name would raise InvalidThemeError, hence the guard.
+        saved_theme = self.prefs.get("app.theme")
+        if saved_theme in self.available_themes:
+            self.theme = saved_theme
 
     def on_mount(self) -> None:
         from .screens.dashboard import DashboardScreen
 
+        self.theme_changed_signal.subscribe(self, self._remember_theme)
         self.push_screen(DashboardScreen())
+
+    def _remember_theme(self, theme: Any) -> None:
+        self.prefs.set("app.theme", theme.name)
 
     def on_unmount(self) -> None:
         self.runtime.close()

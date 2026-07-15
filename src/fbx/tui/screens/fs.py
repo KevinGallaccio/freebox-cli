@@ -53,6 +53,7 @@ class FsScreen(BoxScreen):
         yield Footer()
 
     def on_mount(self) -> None:
+        self.cwd = str(self.app.prefs.get("screens.fs.last_dir", "/"))
         self._update_prompt()
         log = self.query_one("#fs-log", RichLog)
         log.write("The Freebox filesystem. Type `help` for commands.")
@@ -126,6 +127,7 @@ class FsScreen(BoxScreen):
             target = self._abs(args[0])
             await self.box(fs.ls, target)  # existence check; raises if bogus
             self.cwd = target
+            self.app.prefs.set("screens.fs.last_dir", target)
             self._update_prompt()
         elif cmd == "mkdir":
             if not args:
