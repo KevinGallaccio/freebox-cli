@@ -1,0 +1,117 @@
+name: Release
+
+# Tag-driven: `git tag vX.Y.Z && git push origin vX.Y.Z` does everything —
+# test, build, publish to PyPI (Trusted Publishing, no stored token), create
+# the GitHub release, and bump the Homebrew formula in KevinGallaccio/homebrew-tap.
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v8
+      - run: uv sync
+      - run: uv run ruff check src tests
+      - run: uv run pytest
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v8
+      - name: Tag must match the package version
+        run: |
+          version=$(uv run python -c "import fbx; print(fbx.__version__)")
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match fbx.__version__ $version"
+            exit 1
+          fi
+      - run: uv build
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: dist/
+
+  publish-pypi:
+    needs: build
+    runs-on: ubuntu-latest
+    # Trusted Publishing: pypi.org is configured to accept OIDC tokens from
+    # this repo + workflow + environment; no API token exists anywhere.
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
+
+  github-release:
+    needs: publish-pypi
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist/
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/* --title "$GITHUB_REF_NAME" --generate-notes
+
+  homebrew:
+    # Regenerates Formula/fbx.rb in KevinGallaccio/homebrew-tap from this
+    # release's uv.lock (scripts/generate_brew_formula.py). Skips quietly
+    # until the HOMEBREW_TAP_TOKEN secret (fine-grained PAT, contents:write
+    # on the tap repo) exists.
+    needs: publish-pypi
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for the tap token
+        id: gate
+        env:
+          TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          if [ -n "$TAP_TOKEN" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "no HOMEBREW_TAP_TOKEN secret — skipping the formula bump"
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v7
+        if: steps.gate.outputs.run == 'true'
+      - uses: actions/checkout@v7
+        if: steps.gate.outputs.run == 'true'
+        with:
+          repository: KevinGallaccio/homebrew-tap
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: homebrew-tap
+      - uses: astral-sh/setup-uv@v8
+        if: steps.gate.outputs.run == 'true'
+      - name: Regenerate the formula
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          uv run scripts/generate_brew_formula.py \
+            --version "${GITHUB_REF_NAME#v}" \
+            --out homebrew-tap/Formula/fbx.rb
+      - name: Commit and push the bump
+        if: steps.gate.outputs.run == 'true'
+        working-directory: homebrew-tap
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/fbx.rb
+          git diff --cached --quiet || git commit -m "fbx ${GITHUB_REF_NAME#v}"
+          git push
