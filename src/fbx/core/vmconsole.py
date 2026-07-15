@@ -147,3 +147,102 @@ def console_runner(client: Any, vm_id: int, *, detach: int = DETACH_KEY) -> None
     client.require_permission("vm")
     client.ensure_session()
     run_console(client.base_url, client.session_token, vm_id, detach=detach)
+
+
+# -- one-shot command execution (`fbx vm exec`) -----------------------------
+
+
+async def _exec_pump(
+    url: str,
+    token: str,
+    command: str,
+    *,
+    quiet_timeout: float,
+    timeout: float,
+) -> bytes:
+    from websockets.asyncio.client import connect
+    from websockets.exceptions import ConnectionClosedOK
+
+    buf = bytearray()
+    async with connect(
+        url,
+        additional_headers={"X-Fbx-App-Auth": token},
+        subprotocols=["binary"],
+    ) as ws:
+        # Wake the tty (a login prompt or shell may be idle), then let the
+        # pre-existing screen content drain briefly so it isn't mistaken for
+        # command output.
+        await ws.send(b"\n")
+        deadline = asyncio.get_running_loop().time() + timeout
+
+        async def drain(quiet: float, *, collect: bool) -> None:
+            while True:
+                remaining = deadline - asyncio.get_running_loop().time()
+                if remaining <= 0:
+                    raise TimeoutError
+                window = min(quiet, remaining)
+                try:
+                    message = await asyncio.wait_for(ws.recv(), timeout=window)
+                except TimeoutError:
+                    if window < quiet:
+                        # The deadline clipped the observation window: we did NOT
+                        # see a full `quiet` seconds of silence, so this is a
+                        # timeout, not completion — never return truncated
+                        # output as if the command finished.
+                        raise
+                    return  # the tty went quiet — done
+                except ConnectionClosedOK:
+                    return  # console closed cleanly (e.g. the VM stopped) — output ended
+                data = message.encode() if isinstance(message, str) else message
+                if collect:
+                    buf.extend(data)
+
+        await drain(quiet_timeout, collect=False)
+        await ws.send(command.encode() + b"\n")
+        await drain(quiet_timeout, collect=True)
+    return bytes(buf)
+
+
+def run_command(
+    client: Any,
+    vm_id: int,
+    command: str,
+    *,
+    quiet_timeout: float = 2.0,
+    timeout: float = 30.0,
+) -> str:
+    """Send one command line to a VM's serial console and return its output.
+
+    A serial tty is a screen, not an RPC channel: the guest must have a shell
+    on the serial console (a logged-in getty). The output is the raw tty
+    stream — typically the echoed command first, then its output, then the
+    next prompt — with no exit code. Collection stops once the tty has been
+    silent for `quiet_timeout` seconds; `timeout` bounds the whole exchange
+    (raising `FbxConsoleError`), so a command that keeps printing forever
+    can't hang the caller.
+
+    Requires the `vm` permission. Undecodable bytes are replaced, never fatal.
+    """
+    client.require_permission("vm")
+    client.ensure_session()
+    url = serial_console_url(client.base_url, vm_id)
+    try:
+        raw = asyncio.run(
+            _exec_pump(
+                url,
+                client.session_token,
+                command,
+                quiet_timeout=quiet_timeout,
+                timeout=timeout,
+            )
+        )
+    except FbxError:
+        raise
+    except TimeoutError as exc:
+        raise FbxConsoleError(
+            f"vm exec timed out after {timeout:g}s (the guest kept writing "
+            "or never went quiet); partial output was discarded"
+        ) from exc
+    except Exception as exc:  # noqa: BLE001 — surface any WS/transport failure cleanly
+        raise FbxConsoleError(f"vm exec failed: {exc}") from exc
+    return raw.decode("utf-8", errors="replace")

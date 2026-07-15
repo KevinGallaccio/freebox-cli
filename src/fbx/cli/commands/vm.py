@@ -320,6 +320,36 @@ def console(
     ui.info("[dim]detached.[/]")
 
 
+@app.command("exec")
+def exec_(
+    ctx: typer.Context,
+    vm_id: int = typer.Argument(..., help="VM id."),
+    command: str = typer.Argument(..., help="Command line to send to the guest's serial shell."),
+    quiet_timeout: float = typer.Option(
+        2.0, "--quiet-timeout", help="Seconds of console silence that end collection."
+    ),
+    timeout: float = typer.Option(
+        30.0, "--timeout", help="Overall deadline for the exchange."
+    ),
+) -> None:
+    """Run one command on a VM's serial console and print the tty output.
+
+    The guest needs a shell on its serial console (e.g. an autologin getty).
+    Output is the raw tty stream — echoed command, output, next prompt — with
+    no exit code; collection stops after --quiet-timeout seconds of silence.
+    """
+    data = fetch(
+        ctx, vmconsole.run_command, vm_id, command,
+        quiet_timeout=quiet_timeout, timeout=timeout,
+    )
+    state: ui.CliState = ctx.obj
+    if state.as_json:
+        ui.emit_json({"vm_id": vm_id, "command": command, "output": data})
+    else:
+        # Raw tty text: byte-exact pass-through so pipes see what the guest wrote.
+        ui.emit_raw(data)
+
+
 @app.command()
 def vnc(
     ctx: typer.Context,

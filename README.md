@@ -5,12 +5,12 @@ connection status, LAN devices, DHCP, port forwarding, Wi-Fi, downloads,
 VPN, telephony — and the undocumented **virtual machine manager** — plus an
 MCP server so coding agents can drive the box.
 
-> ⚠️ **Early development (v0.4.0).** Working today: discovery, authorization,
+> ⚠️ **Early development (v0.5.0).** Working today: discovery, authorization,
 > the read-only view of every major domain, full write control across DHCP,
 > port forwarding/DMZ/UPnP, Wi-Fi, downloads, filesystem, connection, system,
-> calls and contacts — **and the virtual-machine manager**, including a
-> `fbx vm console` serial console over WebSocket. The MCP server lands next
-> (see the roadmap).
+> calls and contacts, the **virtual-machine manager** (serial console over
+> WebSocket, one-shot `fbx vm exec`) — and the **MCP server + Claude Code
+> plugin**, so a coding agent can drive the box.
 
 **Unofficial.** This project is not affiliated with Free or the Iliad group.
 
@@ -141,11 +141,56 @@ console` attaches to a guest tty:
 ./fbx vm shutdown 2                         # graceful ACPI power-off
 ./fbx vm stop 2                            # hard power-off (prompts)
 ./fbx vm rm 2                              # delete the definition (prompts; disk file kept)
+
+# one-shot command on the serial console (needs a shell on the guest tty)
+./fbx vm exec 2 "uptime"
 ```
 
 The serial console needs the bundled `websockets` dependency; paths for
 `--disk`/`--cd` are absolute (`/Freebox/…`), and `cloudinit_userdata` (which
 holds SSH keys and passwords) is shown only via `--json`, never in a table.
+
+## MCP server — let a coding agent drive the box
+
+`fbx mcp serve` exposes the whole surface (107 tools across 13 toolsets:
+system, connection, lan, dhcp, fw, wifi, downloads, files, calls, contacts,
+storage, vm, raw) as an [MCP](https://modelcontextprotocol.io) server over
+stdio. Same core as the CLI, so behavior is identical; destructive operations
+carry MCP annotations so agents know to ask before rebooting your network.
+
+**Claude Code — the plugin (recommended).** One install gets the MCP server
+*and* the fbx skill (usage guardrails for the agent). In Claude Code:
+
+```
+/plugin marketplace add KevinGallaccio/fbx
+/plugin install fbx@fbx
+```
+
+The plugin launches the server via `uvx`, so it needs
+[`uv`](https://astral.sh/uv) on your PATH — and your box must already be
+paired (`fbx auth login`, one physical button press).
+
+**Any MCP client (Claude Desktop, Cursor, Zed, …).** Install fbx with the
+`mcp` extra and point your client at `fbx mcp serve`:
+
+```sh
+uv tool install 'fbx[mcp] @ git+https://github.com/KevinGallaccio/fbx'
+fbx mcp install        # prints the exact wiring for common clients
+```
+
+```json
+{ "mcpServers": { "fbx": { "command": "fbx", "args": ["mcp", "serve"] } } }
+```
+
+**Dial the surface to taste.** Everything is exposed by default — the
+operator decides, not the tool:
+
+```sh
+fbx mcp serve --read-only              # no writes at all
+fbx mcp serve --toolsets vm,wifi       # only these domains
+fbx mcp serve --exclude raw            # drop the raw API escape hatch
+fbx mcp tools                          # preview what a filter set exposes
+```
 
 ## The `--json` contract
 
@@ -178,8 +223,8 @@ the docs (a leading `/api/latest/` or `/api/v16/` is stripped):
 - [x] Phase 2 — all read-only domains, `--json` everywhere (**v0.2.0**)
 - [x] Phase 3 — write operations across every domain (**v0.3.0**)
 - [x] Phase 4 — VM lifecycle + serial console (**v0.4.0**)
-- [ ] Phase 5 — MCP server + Claude Skill
-- [ ] Phase 6 — splash, `fbx top`, Homebrew tap, PyPI
+- [x] Phase 5 — MCP server + Claude Code plugin & skill (**v0.5.0**)
+- [ ] Phase 6 — splash, `fbx top`, interactive TUI, Homebrew tap, PyPI
 
 ## Development
 
@@ -209,5 +254,8 @@ serveur MCP pour les agents de code.
 ./fbx system info      # état de la box
 ./fbx --json api GET connection/ | jq
 ```
+
+Pour les agents : `fbx mcp serve` (serveur MCP), ou dans Claude Code
+`/plugin marketplace add KevinGallaccio/fbx` puis `/plugin install fbx@fbx`.
 
 **Non officiel.** Ce projet n'est pas affilié à Free ni au groupe Iliad.

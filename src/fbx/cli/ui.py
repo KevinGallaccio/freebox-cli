@@ -94,6 +94,16 @@ def emit_json(data: Any) -> None:
     out.print_json(json.dumps(data, ensure_ascii=False, default=str))
 
 
+def emit_raw(text: str) -> None:
+    """Write pass-through text to stdout byte-exactly.
+
+    Bypasses Rich entirely: `Console.print` word-wraps at the console width
+    (80 when stdout is a pipe) and substitutes `:emoji:` shortcodes — both
+    corrupt verbatim payloads like a guest tty stream (`fbx vm exec`)."""
+    out.file.write(text)
+    out.file.flush()
+
+
 def emit_write(data: Any, state: CliState, *, message: str | None = None) -> None:
     """Report a mutation: friendly line on stderr, response object on stdout.
 

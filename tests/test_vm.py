@@ -274,3 +274,126 @@ def test_bad_size_exits_1():
     mock_login()
     result = runner.invoke(app, ["vm", "disk-create", "/Freebox/x.qcow2", "notasize"])
     assert result.exit_code == 1
+
+
+# -- vm exec (one-shot serial command) --------------------------------------
+
+
+class _FakeClient:
+    """The minimal client surface `run_command` touches."""
+
+    def __init__(self, base_url: str, permissions: dict | None = None):
+        self.base_url = base_url
+        self.session_token = "S1"
+        self.permissions = permissions if permissions is not None else {"vm": True}
+
+    def require_permission(self, scope: str) -> None:
+        from fbx.core.errors import FbxPermissionError
+
+        if not self.permissions.get(scope):
+            raise FbxPermissionError(scope)
+
+    def ensure_session(self) -> None:
+        pass
+
+
+def _serve_fake_tty(handler):
+    """Run a websockets server on an ephemeral port; return its fbx base_url.
+
+    The server offers the `binary` subprotocol like the box does. It lives on
+    a daemon thread for the rest of the pytest process (a handful of these is
+    fine; don't loop over this helper)."""
+    import asyncio
+    import threading
+
+    from websockets.asyncio.server import serve
+
+    started = threading.Event()
+    box: dict = {}
+
+    def run() -> None:
+        async def main() -> None:
+            async with serve(handler, "127.0.0.1", 0, subprotocols=["binary"]) as server:
+                port = server.sockets[0].getsockname()[1]
+                box["base_url"] = f"http://127.0.0.1:{port}/api/v16/"
+                started.set()
+                await asyncio.get_running_loop().create_future()  # park forever
+
+        asyncio.run(main())
+
+    threading.Thread(target=run, daemon=True).start()
+    assert started.wait(5)
+    return box["base_url"]
+
+
+def test_vm_exec_collects_output_until_quiet():
+    from fbx.core.vmconsole import run_command
+
+    async def tty(ws):
+        # Wake newline → emit a prompt (pre-command noise, must be discarded).
+        first = await ws.recv()
+        assert (first if isinstance(first, bytes) else first.encode()) == b"\n"
+        await ws.send(b"guest login: root (automatic login)\r\n# ")
+        # The command line arrives with a trailing newline.
+        line = await ws.recv()
+        assert (line if isinstance(line, bytes) else line.encode()) == b"echo hello\n"
+        await ws.send(b"echo hello\r\n")
+        await ws.send(b"hello\r\n# ")
+        # Then silence: the client should detach on quiet_timeout.
+
+    base_url = _serve_fake_tty(tty)
+    out = run_command(
+        _FakeClient(base_url), 7, "echo hello", quiet_timeout=0.3, timeout=10.0
+    )
+    assert "hello" in out
+    assert "login:" not in out  # pre-command banner was drained, not collected
+
+
+def test_vm_exec_times_out_on_a_chatty_guest():
+    import pytest
+
+    from fbx.core.errors import FbxError
+    from fbx.core.vmconsole import run_command
+
+    async def tty(ws):
+        import asyncio as aio
+
+        await ws.recv()  # wake newline
+        await ws.recv()  # command
+        while True:  # never goes quiet
+            await ws.send(b"spam\r\n")
+            await aio.sleep(0.05)
+
+    base_url = _serve_fake_tty(tty)
+    with pytest.raises(FbxError, match="timed out"):
+        run_command(_FakeClient(base_url), 7, "yes", quiet_timeout=1.0, timeout=0.8)
+
+
+def test_vm_exec_deadline_clipped_quiet_window_is_a_timeout_not_success():
+    # The guest sends one line then goes silent, but the overall deadline is
+    # shorter than quiet_timeout: we can never observe a FULL quiet window, so
+    # this must raise (truncation), never return partial output as success.
+    import pytest
+
+    from fbx.core.errors import FbxError
+    from fbx.core.vmconsole import run_command
+
+    async def tty(ws):
+        await ws.recv()  # wake newline
+        await ws.recv()  # command
+        await ws.send(b"partial output\r\n")
+        # then silence, but quiet_timeout(5) > timeout(1.5): window is clipped
+
+    base_url = _serve_fake_tty(tty)
+    with pytest.raises(FbxError, match="timed out"):
+        run_command(_FakeClient(base_url), 7, "slow", quiet_timeout=5.0, timeout=1.5)
+
+
+def test_vm_exec_requires_vm_permission():
+    import pytest
+
+    from fbx.core.errors import FbxPermissionError
+    from fbx.core.vmconsole import run_command
+
+    with pytest.raises(FbxPermissionError):
+        run_command(_FakeClient("http://x/api/v16/", {"vm": False}), 7, "id")

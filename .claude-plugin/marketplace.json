@@ -1,0 +1,12 @@
+{
+  "name": "fbx",
+  "owner": { "name": "Kevin Gallaccio" },
+  "description": "The fbx plugin: drive a Freebox (Ultra) from Claude Code.",
+  "plugins": [
+    {
+      "name": "fbx",
+      "source": "./",
+      "description": "Freebox MCP server + skill: network, Wi-Fi, DHCP, port forwarding, files, downloads, VMs."
+    }
+  ]
+}

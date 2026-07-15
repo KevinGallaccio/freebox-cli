@@ -1,6 +1,6 @@
 [project]
 name = "fbx"
-version = "0.4.0"
+version = "0.5.0"
 description = "Freebox Ultra CLI — manage your box, your network, and your VMs from the terminal"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -51,6 +51,9 @@ dev = [
     "pytest>=8",
     "respx>=0.21",
     "ruff>=0.5",
+    # The MCP server is an optional extra for users ([project.optional-dependencies]
+    # mcp) but always present in dev so its tests run.
+    "mcp>=1.2",
 ]
 
 [tool.ruff]
