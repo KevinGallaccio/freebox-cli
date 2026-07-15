@@ -314,7 +314,9 @@ fbx api PUT wifi/config/ --data '{"enabled": true}'
 - [x] Phase 5 — serveur MCP + plugin & skill Claude Code (**v0.5.0**)
 - [x] Phase 6 — PyPI + tap Homebrew + l'application interactive (**v0.6.0**)
 - [x] Phase 7 — dépôt prêt pour les contributions (règles, modèles, protection)
-- [ ] Phase 8 — retours d'usage réel et améliorations UI/UX de l'application
+- [x] Phase 8 — l'application peaufinée sur retours d'usage réel : logo et
+  thèmes freebox, tableau de bord adaptatif, vrai shell de fichiers, console
+  série guidée, préférences persistantes (**v0.7.0**)
 
 </details>
 
