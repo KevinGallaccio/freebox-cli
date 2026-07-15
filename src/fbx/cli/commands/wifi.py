@@ -45,6 +45,54 @@ def bss(ctx: typer.Context) -> None:
 
 
 @app.command()
+def key(ctx: typer.Context) -> None:
+    """Print the Wi-Fi passphrase(s).
+
+    Bare value on stdout — `fbx wifi key | pbcopy` grabs it cleanly. With
+    several distinct SSIDs, prints one `ssid<TAB>key` line each. This is also
+    where to look when an MCP result shows the key `[redacted by fbx…]`.
+    """
+    data = fetch(ctx, api.bss)
+    pairs: list[tuple[str, str]] = []
+    for b in data or []:
+        cfg = b.get("config") or {}
+        ssid, k = cfg.get("ssid"), cfg.get("key")
+        if k and (ssid, k) not in pairs:
+            pairs.append((ssid, k))
+    state: ui.CliState = ctx.obj
+    if state.as_json:
+        ui.emit_json([{"ssid": s, "key": k} for s, k in pairs])
+    elif len(pairs) == 1:
+        ui.emit_raw(pairs[0][1] + "\n")
+    else:
+        ui.emit_raw("".join(f"{s}\t{k}\n" for s, k in pairs))
+
+
+@app.command()
+def neighbors(
+    ctx: typer.Context,
+    ap_id: int = typer.Argument(..., help="AP id (see `fbx wifi ap` — ids shift)."),
+    scan: bool = typer.Option(
+        False, "--scan", help="Refresh the survey first (waits for the radio)."
+    ),
+    wait: float = typer.Option(
+        3.0, "--wait", help="Seconds to let a --scan settle before reading."
+    ),
+) -> None:
+    """List neighboring Wi-Fi networks one radio can hear (channel survey)."""
+    import time
+
+    def op(client):
+        if scan:
+            api.neighbors_scan(client, ap_id)
+            time.sleep(wait)
+        return api.neighbors(client, ap_id)
+
+    data = fetch(ctx, op)
+    ui.emit(data, ctx.obj, table=_neighbors_table)
+
+
+@app.command()
 def stations(
     ctx: typer.Context,
     ap_id: int | None = typer.Option(None, "--ap", help="Only clients of this AP id."),
@@ -317,6 +365,27 @@ def _ap_table(items: list) -> Table:
             fmt.safe(st.get("channel_width") or cfg.get("channel_width")),
             f"[green]{state}[/]" if state == "active" else fmt.safe(state),
             fmt.yesno(cfg.get("dfs_enabled")),
+        )
+    return t
+
+
+def _neighbors_table(items: list) -> Table:
+    t = Table(box=None, title="Neighboring networks")
+    t.add_column("SSID")
+    t.add_column("BSSID")
+    t.add_column("Band")
+    t.add_column("Channel", justify="right")
+    t.add_column("Width")
+    t.add_column("Signal", justify="right")
+    for n in sorted(items, key=lambda x: x.get("signal", 0), reverse=True):
+        signal = n.get("signal")
+        t.add_row(
+            fmt.safe(n.get("ssid")) or "[dim](hidden)[/]",
+            fmt.safe(n.get("bssid")),
+            fmt.safe(n.get("band")),
+            str(n.get("channel", "")),
+            fmt.safe(str(n.get("channel_width", ""))),
+            f"{signal} dBm" if signal is not None else "",
         )
     return t
 

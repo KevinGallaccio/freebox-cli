@@ -364,3 +364,93 @@ def test_wps_stop_deletes_sessions():
     result = runner.invoke(app, ["wifi", "wps-stop"])
     assert result.exit_code == 0
     assert route.called
+
+
+# -- wifi key (bare passphrase output) ---------------------------------------
+
+
+_KEY_BSS = [
+    {
+        "id": "02:00:00:00:00:10",
+        "config": {"ssid": "net-a", "key": "hunter2"},
+    },
+    {
+        "id": "02:00:00:00:00:11",
+        "config": {"ssid": "net-a", "key": "hunter2"},
+    },
+]
+
+
+@respx.mock
+def test_wifi_key_prints_the_bare_passphrase():
+    authorize()
+    mock_login()
+    mock_get("wifi/bss/", _KEY_BSS)
+    result = runner.invoke(app, ["wifi", "key"])
+    assert result.exit_code == 0
+    assert result.stdout == "hunter2\n"  # bare value: `| pbcopy` friendly
+
+
+@respx.mock
+def test_wifi_key_multiple_ssids_prints_tabbed_lines():
+    authorize()
+    mock_login()
+    two = [
+        {"id": "x", "config": {"ssid": "net-a", "key": "hunter2"}},
+        {"id": "y", "config": {"ssid": "guest", "key": "otherpw"}},
+    ]
+    mock_get("wifi/bss/", two)
+    result = runner.invoke(app, ["--json", "wifi", "key"])
+    assert result.exit_code == 0
+    assert json.loads(result.stdout) == [
+        {"ssid": "net-a", "key": "hunter2"},
+        {"ssid": "guest", "key": "otherpw"},
+    ]
+    plain = runner.invoke(app, ["wifi", "key"])
+    assert plain.stdout == "net-a\thunter2\nguest\totherpw\n"
+
+
+# -- wifi neighbors -----------------------------------------------------------
+
+
+NEIGHBORS = [
+    {"ssid": "box-one", "bssid": "02:00:00:00:00:aa", "band": "2d4g",
+     "channel": 6, "channel_width": "20", "secondary_channel": 0, "signal": -53},
+    {"ssid": "", "bssid": "02:00:00:00:00:bb", "band": "2d4g",
+     "channel": 1, "channel_width": "20", "secondary_channel": 0, "signal": -67},
+]
+
+
+@respx.mock
+def test_wifi_neighbors_reads_the_survey():
+    authorize()
+    mock_login()
+    mock_get("wifi/ap/10/neighbors/", NEIGHBORS)
+    result = runner.invoke(app, ["--json", "wifi", "neighbors", "10"])
+    assert result.exit_code == 0
+    assert [n["bssid"] for n in json.loads(result.stdout)] == [
+        "02:00:00:00:00:aa", "02:00:00:00:00:bb",
+    ]
+    table = runner.invoke(app, ["wifi", "neighbors", "10"])
+    assert "(hidden)" in table.stdout  # empty SSID rendered, not blank
+
+
+@respx.mock
+def test_wifi_neighbors_scan_posts_then_reads():
+    authorize()
+    mock_login()
+    scan_route = mock_write("post", "wifi/ap/10/neighbors/scan", envelope={"success": True})
+    mock_get("wifi/ap/10/neighbors/", NEIGHBORS)
+    result = runner.invoke(
+        app, ["--json", "wifi", "neighbors", "10", "--scan", "--wait", "0"]
+    )
+    assert result.exit_code == 0
+    assert scan_route.called
+
+
+@respx.mock
+def test_wifi_neighbors_scan_needs_settings_permission():
+    authorize()
+    mock_login(permissions={"settings": False})
+    result = runner.invoke(app, ["wifi", "neighbors", "10", "--scan", "--wait", "0"])
+    assert result.exit_code == 4  # EXIT_PERMISSION

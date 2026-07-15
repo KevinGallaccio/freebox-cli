@@ -320,6 +320,25 @@ def console(
     ui.info("[dim]detached.[/]")
 
 
+@app.command()
+def userdata(
+    ctx: typer.Context,
+    vm_id: int = typer.Argument(..., help="VM id."),
+) -> None:
+    """Print a VM's raw cloud-init userdata (may contain passwords).
+
+    Bare value on stdout, so `fbx vm userdata 1 | pbcopy` grabs it cleanly.
+    This is also where to look when an MCP result shows it `[redacted by fbx…]`.
+    """
+    data = fetch(ctx, api.get, vm_id)
+    text = data.get("cloudinit_userdata") or ""
+    state: ui.CliState = ctx.obj
+    if state.as_json:
+        ui.emit_json({"id": vm_id, "cloudinit_userdata": text})
+    else:
+        ui.emit_raw(text if not text or text.endswith("\n") else text + "\n")
+
+
 @app.command("exec")
 def exec_(
     ctx: typer.Context,

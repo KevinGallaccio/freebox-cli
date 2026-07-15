@@ -51,6 +51,20 @@ def stations(client: Any) -> list:
     return result
 
 
+def neighbors(client: Any, ap_id: int) -> list:
+    """GET /wifi/ap/{id}/neighbors/ — BSSes the radio heard in its last survey.
+
+    The list reflects the box's most recent background sweep; POST a
+    `neighbors_scan` first (and give it a few seconds) for fresh data."""
+    return as_list(client.get(f"wifi/ap/{ap_id}/neighbors/"))
+
+
+def neighbors_scan(client: Any, ap_id: int) -> Any:
+    """POST /wifi/ap/{id}/neighbors/scan — refresh a radio's neighbor survey."""
+    client.require_permission("settings")
+    return client.post(f"wifi/ap/{ap_id}/neighbors/scan")
+
+
 def mac_filters(client: Any) -> list:
     """GET /wifi/mac_filter/ — the MAC access-control list (empty → [])."""
     return as_list(client.get("wifi/mac_filter/"))

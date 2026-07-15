@@ -43,10 +43,14 @@ _API_MODULES = (
     system, vm, wifi,
 )
 
-# Core functions exposed through a registry wait-wrapper rather than directly.
+# Core functions exposed through a registry wrapper rather than directly
+# (wait-polling, secrets redaction, or size filtering).
 _VIA_WRAPPER = {
     fs.move, fs.copy, fs.remove,          # _fs_move/_fs_copy/_fs_remove
     vm.disk_create, vm.disk_resize,       # _vm_disk_create/_vm_disk_resize
+    vm.list_vms, vm.get,                  # _vm_list/_vm_get (userdata redaction)
+    wifi.bss,                             # _wifi_bss (key redaction)
+    lan.devices,                          # _lan_devices (reachable-only default)
 }
 
 # Pure helpers / pollers — not box operations, so never tools themselves.
@@ -165,7 +169,101 @@ def test_select_toolsets_and_exclude():
 
 
 def test_default_surface_is_everything():
-    assert len(select()) == len(TOOLS) == 107
+    assert len(select()) == len(TOOLS) == 109
+
+
+# -- secrets redaction + size filtering ----------------------------------------
+
+
+_BSS_FIXTURE = [{
+    "id": "02:00:00:00:00:10",
+    "config": {"ssid": "net-a", "key": "hunter2", "encryption": "wpa2_psk_ccmp"},
+    "bss_params": {"ssid": "net-a", "key": "hunter2"},
+    "shared_bss_params": {"ssid": "net-a", "key": "hunter2"},
+}]
+
+
+@respx.mock
+def test_vm_userdata_is_redacted_by_default_and_raw_on_request():
+    authorize()
+    mock_login()
+    mock_get("vm/", [{"id": 0, "name": "vm-a", "cloudinit_userdata": "password: s3cret"}])
+    rt = FbxRuntime()
+    try:
+        masked = rt.call(by_name()["fbx_vm_list"], {})
+        raw = rt.call(by_name()["fbx_vm_list"], {"include_secrets": True})
+    finally:
+        rt.close()
+    assert "s3cret" not in json.dumps(masked)
+    assert "redacted by fbx" in masked[0]["cloudinit_userdata"]
+    assert "fbx vm userdata" in masked[0]["cloudinit_userdata"]  # the recovery hint
+    assert raw[0]["cloudinit_userdata"] == "password: s3cret"
+
+
+@respx.mock
+def test_vm_get_redacts_userdata_too():
+    authorize()
+    mock_login()
+    mock_get("vm/0", {"id": 0, "name": "vm-a", "cloudinit_userdata": "password: s3cret"})
+    rt = FbxRuntime()
+    try:
+        masked = rt.call(by_name()["fbx_vm_get"], {"vm_id": 0})
+    finally:
+        rt.close()
+    assert "s3cret" not in json.dumps(masked)
+
+
+@respx.mock
+def test_wifi_keys_masked_at_every_level():
+    authorize()
+    mock_login()
+    mock_get("wifi/bss/", _BSS_FIXTURE)
+    rt = FbxRuntime()
+    try:
+        masked = rt.call(by_name()["fbx_wifi_bss"], {})
+        raw = rt.call(by_name()["fbx_wifi_bss"], {"include_secrets": True})
+    finally:
+        rt.close()
+    dumped = json.dumps(masked)
+    assert "hunter2" not in dumped
+    for field in ("config", "bss_params", "shared_bss_params"):
+        assert "redacted by fbx" in masked[0][field]["key"]
+    assert masked[0]["config"]["ssid"] == "net-a"  # only the key is touched
+    assert raw[0]["bss_params"]["key"] == "hunter2"
+
+
+@respx.mock
+def test_lan_devices_defaults_to_reachable_only():
+    authorize()
+    mock_login()
+    mock_get("lan/browser/pub/", [
+        {"id": "ether-02:00:00:00:00:01", "active": True},
+        {"id": "ether-02:00:00:00:00:02", "active": False},
+    ])
+    rt = FbxRuntime()
+    try:
+        reachable = rt.call(by_name()["fbx_lan_devices"], {})
+        everything = rt.call(by_name()["fbx_lan_devices"], {"all": True})
+    finally:
+        rt.close()
+    assert [h["id"] for h in reachable] == ["ether-02:00:00:00:00:01"]
+    assert len(everything) == 2
+
+
+@respx.mock
+def test_wifi_neighbors_tools_hit_the_survey_endpoints():
+    authorize()
+    mock_login()
+    mock_get("wifi/ap/10/neighbors/", [{"bssid": "02:00:00:00:00:aa", "channel": 6}])
+    scan_route = mock_write("post", "wifi/ap/10/neighbors/scan", envelope={"success": True})
+    rt = FbxRuntime()
+    try:
+        seen = rt.call(by_name()["fbx_wifi_neighbors"], {"ap_id": 10})
+        rt.call(by_name()["fbx_wifi_neighbors_scan"], {"ap_id": 10})
+    finally:
+        rt.close()
+    assert seen[0]["channel"] == 6
+    assert scan_route.called
 
 
 # -- runtime dispatch + error mapping (respx-mocked box) ------------------------
@@ -291,7 +389,7 @@ async def test_mcp_protocol_list_and_call():
     try:
         async with create_connected_server_and_client_session(server) as session:
             listed = await session.list_tools()
-            assert len(listed.tools) == 107
+            assert len(listed.tools) == 109
             tools = {t.name: t for t in listed.tools}
             assert tools["fbx_system_info"].annotations.readOnlyHint is True
             assert tools["fbx_system_reboot"].annotations.destructiveHint is True

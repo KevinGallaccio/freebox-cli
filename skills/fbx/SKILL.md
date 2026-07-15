@@ -67,6 +67,13 @@ behavior, same shapes.
 - **Port forwarding**: some boxes reject WAN ports outside an allowed range
   (`port_outside_range`) — treat "the box refused" as a real answer, not a bug.
 - **Downloads**: `add` accepts URLs/magnets; `erase` deletes the files too.
+- **Secrets are masked by default** in MCP results (cloud-init userdata, Wi-Fi
+  keys): you'll see `[redacted by fbx…]` with recovery instructions. Pass
+  `include_secrets: true` only when the task genuinely needs the value, and
+  never echo it back unasked. Humans: `fbx wifi key`, `fbx vm userdata <id>`.
+- **Channel planning**: `fbx_wifi_neighbors` (or `fbx wifi neighbors <ap>`)
+  lists what a radio hears; trigger `fbx_wifi_neighbors_scan` and wait a few
+  seconds for fresh data.
 
 ## The escape hatch
 

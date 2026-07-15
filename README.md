@@ -70,6 +70,8 @@ Every domain gets a noun command with Rich tables (and `--json` for scripts):
 ./fbx wifi bss             # SSIDs + security (keys only via --json)
 ./fbx wifi stations        # associated clients, signal, rates
 ./fbx wifi mac-filter      # MAC access-control list
+./fbx wifi neighbors 10    # channel survey: what AP 10 hears (--scan refreshes)
+./fbx wifi key             # print the Wi-Fi passphrase (pipe to pbcopy)
 ./fbx downloads list       # download tasks
 ./fbx downloads stats      # manager counters
 ./fbx storage disks        # physical disks
@@ -144,6 +146,8 @@ console` attaches to a guest tty:
 
 # one-shot command on the serial console (needs a shell on the guest tty)
 ./fbx vm exec 2 "uptime"
+
+./fbx vm userdata 2                        # print the raw cloud-init userdata
 ```
 
 The serial console needs the bundled `websockets` dependency; paths for
@@ -157,6 +161,12 @@ system, connection, lan, dhcp, fw, wifi, downloads, files, calls, contacts,
 storage, vm, raw) as an [MCP](https://modelcontextprotocol.io) server over
 stdio. Same core as the CLI, so behavior is identical; destructive operations
 carry MCP annotations so agents know to ask before rebooting your network.
+
+Two agent-specific defaults (each overridable per call): secret fields —
+cloud-init userdata, Wi-Fi keys — are **masked** unless the agent passes
+`include_secrets: true` (humans use `fbx vm userdata` / `fbx wifi key`), and
+`fbx_lan_devices` returns currently-reachable devices unless `all: true`
+(the full history runs to hundreds of KB on a lived-in LAN).
 
 **Claude Code — the plugin (recommended).** One install gets the MCP server
 *and* the fbx skill (usage guardrails for the agent). In Claude Code:

@@ -163,6 +163,70 @@ def _vm_disk_resize(client: Any, disk_path: str, size: int, shrink_allow: bool =
     )
 
 
+# -- secrets redaction --------------------------------------------------------
+# The MCP results feed a language model and land in transcripts, so secret
+# fields are masked by default (the CLI equivalent: tables hide them, --json
+# shows them). `include_secrets=true` returns the raw object.
+
+_USERDATA_REDACTED = (
+    "[redacted by fbx: cloud-init userdata often contains passwords/keys. "
+    "Pass include_secrets=true, or a human can run `fbx vm userdata <id>` "
+    "or open Freebox OS (http://mafreebox.freebox.fr) → VMs]"
+)
+_WIFI_KEY_REDACTED = (
+    "[redacted by fbx: Wi-Fi passphrase. Pass include_secrets=true, or a "
+    "human can run `fbx wifi key` or open Freebox OS → Wi-Fi]"
+)
+
+
+def _redact_vm_obj(vm_obj: Any) -> Any:
+    if isinstance(vm_obj, dict) and vm_obj.get("cloudinit_userdata"):
+        return {**vm_obj, "cloudinit_userdata": _USERDATA_REDACTED}
+    return vm_obj
+
+
+def _redact_wifi_keys(node: Any) -> Any:
+    """Mask every non-empty `key` field, at any depth (config/bss_params/…)."""
+    if isinstance(node, dict):
+        return {
+            k: (_WIFI_KEY_REDACTED if k == "key" and isinstance(v, str) and v
+                else _redact_wifi_keys(v))
+            for k, v in node.items()
+        }
+    if isinstance(node, list):
+        return [_redact_wifi_keys(x) for x in node]
+    return node
+
+
+def _vm_list(client: Any, include_secrets: bool = False) -> list:
+    vms = vm.list_vms(client)
+    return vms if include_secrets else [_redact_vm_obj(v) for v in vms]
+
+
+def _vm_get(client: Any, vm_id: int, include_secrets: bool = False) -> dict:
+    obj = vm.get(client, vm_id)
+    return obj if include_secrets else _redact_vm_obj(obj)
+
+
+def _wifi_bss(client: Any, include_secrets: bool = False) -> list:
+    data = wifi.bss(client)
+    return data if include_secrets else _redact_wifi_keys(data)
+
+
+def _lan_devices(client: Any, interface: str = "pub", all: bool = False) -> list:
+    """Reachable hosts by default: the full browser list (every device ever
+    seen, with history) runs to hundreds of KB on a lived-in LAN."""
+    hosts = lan.devices(client, interface)
+    return hosts if all else [h for h in hosts if h.get("active")]
+
+
+_INCLUDE_SECRETS = _p(
+    "include_secrets", "boolean",
+    "Return secret fields unmasked (they will enter the model context).",
+    required=False,
+)
+
+
 # -- shared param fragments ---------------------------------------------------
 
 _WAIT = (
@@ -261,11 +325,17 @@ TOOLS: tuple[ToolSpec, ...] = (
         readonly=True,
     ),
     ToolSpec(
-        "fbx_lan_devices", "lan", lan.devices,
+        "fbx_lan_devices", "lan", _lan_devices,
         "Devices on a LAN interface: names, MACs, IPs, reachability, host type. "
-        "Host ids look like `ether-xx:xx:…` and are per-interface.",
-        params=(_p("interface", "string", "Interface name (default `pub`, the main LAN).",
-                   required=False),),
+        "Host ids look like `ether-xx:xx:…` and are per-interface. Returns "
+        "currently-reachable devices; `all=true` adds every device the box has "
+        "ever seen (large: full history).",
+        params=(
+            _p("interface", "string", "Interface name (default `pub`, the main LAN).",
+               required=False),
+            _p("all", "boolean", "Include unreachable/historical devices.",
+               required=False),
+        ),
         readonly=True,
     ),
     ToolSpec(
@@ -433,9 +503,10 @@ TOOLS: tuple[ToolSpec, ...] = (
         readonly=True,
     ),
     ToolSpec(
-        "fbx_wifi_bss", "wifi", wifi.bss,
-        "BSSes (SSIDs) per radio, with security config. WPA keys appear in this "
-        "result — do not echo them back to the user unless asked.",
+        "fbx_wifi_bss", "wifi", _wifi_bss,
+        "BSSes (SSIDs) per radio, with security config. WPA keys are masked by "
+        "default; `include_secrets=true` returns them (never echo one unasked).",
+        params=(_INCLUDE_SECRETS,),
         readonly=True,
     ),
     ToolSpec(
@@ -459,6 +530,21 @@ TOOLS: tuple[ToolSpec, ...] = (
         "fbx_wifi_planning", "wifi", wifi.planning,
         "Wi-Fi on/off weekly planning.",
         readonly=True,
+    ),
+    ToolSpec(
+        "fbx_wifi_neighbors", "wifi", wifi.neighbors,
+        "Neighboring Wi-Fi networks one radio heard (BSSID, SSID, channel, "
+        "signal) — from the box's last background survey; trigger "
+        "fbx_wifi_neighbors_scan and wait a few seconds for fresh data. Useful "
+        "for choosing a channel.",
+        params=(_p("ap_id", "integer", "AP id from fbx_wifi_aps."),),
+        readonly=True,
+    ),
+    ToolSpec(
+        "fbx_wifi_neighbors_scan", "wifi", wifi.neighbors_scan,
+        "Refresh a radio's neighbor survey (non-disruptive; clients stay "
+        "associated). Read fbx_wifi_neighbors a few seconds later.",
+        params=(_p("ap_id", "integer", "AP id from fbx_wifi_aps."),),
     ),
     ToolSpec(
         "fbx_wifi_wps_config", "wifi", wifi.wps_config,
@@ -776,15 +862,20 @@ TOOLS: tuple[ToolSpec, ...] = (
     ),
     # ── vm ────────────────────────────────────────────────────────────────
     ToolSpec(
-        "fbx_vm_list", "vm", vm.list_vms,
+        "fbx_vm_list", "vm", _vm_list,
         "Every configured VM with status and full config. VM ids come from here — "
-        "never assume them.",
+        "never assume them. cloud-init userdata is masked by default "
+        "(`include_secrets=true` for the raw config).",
+        params=(_INCLUDE_SECRETS,),
         readonly=True,
     ),
     ToolSpec(
-        "fbx_vm_get", "vm", vm.get,
-        "One VM's config/status.",
-        params=(_p("vm_id", "integer", "VM id from fbx_vm_list."),),
+        "fbx_vm_get", "vm", _vm_get,
+        "One VM's config/status (cloud-init userdata masked by default).",
+        params=(
+            _p("vm_id", "integer", "VM id from fbx_vm_list."),
+            _INCLUDE_SECRETS,
+        ),
         readonly=True,
     ),
     ToolSpec(

@@ -397,3 +397,32 @@ def test_vm_exec_requires_vm_permission():
 
     with pytest.raises(FbxPermissionError):
         run_command(_FakeClient("http://x/api/v16/", {"vm": False}), 7, "id")
+
+
+# -- vm userdata (bare copyable output) --------------------------------------
+
+
+@respx.mock
+def test_vm_userdata_prints_raw_text():
+    import json
+
+    import respx as _respx  # noqa: F401 (decorator import consistency)
+
+    authorize()
+    mock_login()
+    mock_get("vm/1", {"id": 1, "name": "vm-a", "cloudinit_userdata": "#cloud-config\nsecret"})
+    result = runner.invoke(app, ["vm", "userdata", "1"])
+    assert result.exit_code == 0
+    assert result.stdout == "#cloud-config\nsecret\n"  # bare, trailing-newline'd
+    as_json = runner.invoke(app, ["--json", "vm", "userdata", "1"])
+    assert json.loads(as_json.stdout)["cloudinit_userdata"] == "#cloud-config\nsecret"
+
+
+@respx.mock
+def test_vm_userdata_empty_prints_nothing():
+    authorize()
+    mock_login()
+    mock_get("vm/1", {"id": 1, "name": "vm-a"})
+    result = runner.invoke(app, ["vm", "userdata", "1"])
+    assert result.exit_code == 0
+    assert result.stdout == ""
