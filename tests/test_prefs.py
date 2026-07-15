@@ -121,7 +121,7 @@ async def test_fs_last_dir_survives_relaunch():
 async def test_the_house_theme_is_the_default_until_a_choice_is_saved():
     authorize()
     _mock_dashboard_box()
-    assert FbxApp(splash=False).theme == "freebox"
+    assert FbxApp(splash=False).theme == "freebox-light"
 
     app = FbxApp(splash=False)
     async with app.run_test(size=(120, 40)) as pilot:

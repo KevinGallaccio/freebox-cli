@@ -13,9 +13,30 @@ from textual.theme import Theme
 FREE_RED = "#CC0000"
 _WHITE = "#F5F5F5"
 
-# The app's own look: Freebox OS is dark greys with the red doing the talking.
-FREEBOX_THEME = Theme(
-    name="freebox",
+# The app's own look, in both moods. The primary IS the highlight color
+# (textual derives $block-cursor-background from it), so both stay red.
+# Light is the default — Freebox OS itself is a light UI, red on white.
+FREEBOX_LIGHT = Theme(
+    name="freebox-light",
+    primary=FREE_RED,
+    secondary="#8B1A1A",
+    accent=FREE_RED,
+    # textual-light's neutrals (Kevin's favourite), red doing the talking.
+    surface="#D8D8D8",
+    panel="#D0D0D0",
+    background="#E0E0E0",
+    warning="#B26A00",
+    # Not the brand red: errors must still stand apart from the accent.
+    error="#B3395B",
+    success="#2E7D32",
+    dark=False,
+    variables={
+        "footer-key-foreground": FREE_RED,
+    },
+)
+
+FREEBOX_DARK = Theme(
+    name="freebox-dark",
     primary=FREE_RED,
     secondary="#8B8B8B",
     accent=FREE_RED,
@@ -24,10 +45,12 @@ FREEBOX_THEME = Theme(
     surface="#1B1B1B",
     panel="#2A2A2A",
     warning="#F9A825",
-    # Not the brand red: errors must still stand apart from the accent.
     error="#FF5252",
     success="#4CAF50",
     dark=True,
+    variables={
+        "footer-key-foreground": FREE_RED,
+    },
 )
 
 # Pixel grid: WIDTH columns × HEIGHT half-rows (2 per text row).

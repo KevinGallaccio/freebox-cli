@@ -42,15 +42,16 @@ class FbxApp(App):
         self._last_error: tuple[str, float] | None = None
         self._show_splash = splash
         self.prefs = Prefs.load()
-        from .brand import FREEBOX_THEME
+        from .brand import FREEBOX_DARK, FREEBOX_LIGHT
 
-        self.register_theme(FREEBOX_THEME)
+        self.register_theme(FREEBOX_LIGHT)
+        self.register_theme(FREEBOX_DARK)
         # Before the first frame, so there's no flash of the default theme.
         # A stale saved name would raise InvalidThemeError, hence the guard;
         # with nothing (valid) saved, the house theme is the default.
         saved_theme = self.prefs.get("app.theme")
         self.theme = (
-            saved_theme if saved_theme in self.available_themes else "freebox"
+            saved_theme if saved_theme in self.available_themes else "freebox-light"
         )
 
     def on_mount(self) -> None:
