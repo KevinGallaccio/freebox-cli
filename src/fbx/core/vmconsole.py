@@ -3,9 +3,10 @@
 `GET /vm/{id}/console` upgrades to a WebSocket that streams the guest's serial
 tty, byte-for-byte, in both directions (undocumented upstream; verified against
 the box). This module attaches the local terminal to it: stdin → WS, WS →
-stdout, with the local tty in raw mode so control keys reach the guest. A single
-escape key (Ctrl-] by default, like telnet) detaches cleanly without touching
-the guest.
+stdout, with the local tty in raw mode so control keys reach the guest. The
+escape keys (Ctrl-T, or telnet's classic Ctrl-]) detach cleanly without
+touching the guest — two of them because `]` barely exists on AZERTY layouts
+and some terminals swallow Ctrl-].
 
 Auth rides the same session as the HTTP API — the WebSocket handshake carries
 the `X-Fbx-App-Auth` session token as a header. POSIX only (needs `termios`);
@@ -20,8 +21,20 @@ from typing import Any
 
 from .errors import FbxError
 
-# Ctrl-] (telnet's escape) — the local detach key; never forwarded to the guest.
-DETACH_KEY = 0x1D
+# Local detach keys; never forwarded to the guest. Ctrl-] is telnet's classic
+# escape; Ctrl-T is the AZERTY-typable one (and safe: SIGINFO has no meaning
+# on a raw serial stream, and Linux guests ignore it).
+DETACH_KEY = 0x1D  # Ctrl-]
+DETACH_KEYS: tuple[int, ...] = (0x1D, 0x14)  # Ctrl-], Ctrl-T
+DETACH_HINT = "Ctrl-T (or Ctrl-])"
+
+
+def _split_on_detach(chunk: bytes, detach: tuple[int, ...]) -> tuple[bytes, bool]:
+    """Everything before the first detach byte, and whether one was seen."""
+    positions = [chunk.index(key) for key in detach if key in chunk]
+    if not positions:
+        return chunk, False
+    return chunk[: min(positions)], True
 
 
 class FbxConsoleError(FbxError):
@@ -47,7 +60,7 @@ def vnc_url(base_url: str, vm_id: int) -> str:
     return serial_console_url(base_url, vm_id).replace(f"vm/{vm_id}/console", f"vm/{vm_id}/vnc")
 
 
-async def _pump(url: str, token: str, detach: int) -> None:
+async def _pump(url: str, token: str, detach: tuple[int, ...]) -> None:
     # Imported lazily so the dependency is only needed when the console is used.
     from websockets.asyncio.client import connect
 
@@ -85,12 +98,11 @@ async def _pump(url: str, token: str, detach: int) -> None:
                     chunk = await queue.get()
                     if not chunk:  # EOF on stdin
                         return
-                    if detach in chunk:
-                        head = chunk[: chunk.index(detach)]
-                        if head:
-                            await ws.send(head)
+                    head, detached = _split_on_detach(chunk, detach)
+                    if head:
+                        await ws.send(head)
+                    if detached:
                         return
-                    await ws.send(chunk)
             finally:
                 loop.remove_reader(fd)
 
@@ -107,13 +119,21 @@ async def _pump(url: str, token: str, detach: int) -> None:
                 raise exc
 
 
-def run_console(base_url: str, token: str, vm_id: int, *, detach: int = DETACH_KEY) -> None:
+def run_console(
+    base_url: str,
+    token: str,
+    vm_id: int,
+    *,
+    detach: int | tuple[int, ...] = DETACH_KEYS,
+) -> None:
     """Attach the local terminal to a VM's serial console until detach/EOF.
 
     Puts stdin in raw mode (if it's a tty) so control keys reach the guest, and
     always restores it. Raises `FbxConsoleError` on an unsupported platform or a
     connection failure.
     """
+    if isinstance(detach, int):
+        detach = (detach,)
     try:
         import termios
         import tty
@@ -140,7 +160,9 @@ def run_console(base_url: str, token: str, vm_id: int, *, detach: int = DETACH_K
             termios.tcsetattr(fd, termios.TCSADRAIN, saved)
 
 
-def console_runner(client: Any, vm_id: int, *, detach: int = DETACH_KEY) -> None:
+def console_runner(
+    client: Any, vm_id: int, *, detach: int | tuple[int, ...] = DETACH_KEYS
+) -> None:
     """Attach using an authenticated client (needs its session token + base URL).
 
     Requires the `vm` permission; the client must already hold a session."""

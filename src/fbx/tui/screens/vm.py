@@ -31,7 +31,7 @@ _PREFLIGHT = (
     "This attaches your terminal to the VM's serial port (its tty) — not a "
     "fresh shell. You may land on a guest login prompt, or on whatever the "
     "console last printed; a sleeping getty may need an Enter to wake up."
-    "\n\nTo come back to fbx, press Ctrl-]"
+    f"\n\nTo come back to fbx, press {vmconsole.DETACH_HINT}"
 )
 
 
@@ -47,6 +47,8 @@ class ConsolePreflightModal(ModalScreen["str | None"]):
         Binding("a", "attach", "Attach here"),
         Binding("t", "terminal", "New terminal"),
         Binding("r", "reveal", "Reveal credentials", show=False),
+        Binding("p", "copy_password", "Copy password", show=False),
+        Binding("u", "copy_login", "Copy login", show=False),
         Binding("escape", "cancel", "Cancel", show=False),
     ]
 
@@ -86,8 +88,10 @@ class ConsolePreflightModal(ModalScreen["str | None"]):
             else:
                 # Fixed-width mask: the length is a secret too.
                 text.append("••••••••", style="dim")
-        if not self._revealed:
-            text.append("  —  r reveals", style="dim italic")
+        text.append(
+            "  —  r reveals · p copies the password · u the login",
+            style="dim italic",
+        )
         return text
 
     def action_reveal(self) -> None:
@@ -95,6 +99,22 @@ class ConsolePreflightModal(ModalScreen["str | None"]):
             return
         self._revealed = True
         self.query_one("#preflight-creds", Static).update(self._cred_text())
+
+    def action_copy_password(self) -> None:
+        if not self._credentials:
+            return
+        self.app.copy_to_clipboard(self._credentials[0][1])
+        self.notify("Password copied to the clipboard.")
+
+    def action_copy_login(self) -> None:
+        if not self._credentials:
+            return
+        login = self._credentials[0][0]
+        if login == "password":  # the generic label: no username to copy
+            self.notify("cloud-init names no login for this one.", severity="warning")
+            return
+        self.app.copy_to_clipboard(login)
+        self.notify(f"Login {login!r} copied to the clipboard.")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         choice = event.button.id
@@ -397,8 +417,16 @@ class VmScreen(BoxScreen):
             return
         # Release the terminal to the raw byte pump; the pump runs in a
         # thread so its own event loop (asyncio.run) doesn't collide with
-        # the app's. Ctrl-] detaches, then the app resumes.
+        # the app's. A detach key brings the app back.
         with self.app.suspend():
+            # A serial tty prints nothing until the guest does — without this
+            # banner an idle console looks like a hang.
+            name = item.get("name") or vm_id
+            print(
+                f"── {name} · serial console — {vmconsole.DETACH_HINT} returns "
+                "to fbx; Enter wakes an idle prompt.",
+                flush=True,
+            )
             try:
                 await asyncio.to_thread(
                     self.app.runtime.call, vmconsole.console_runner, vm_id

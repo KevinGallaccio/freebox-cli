@@ -184,3 +184,53 @@ def test_applescript_quoting_survives_quotes_and_backslashes():
     from fbx.tui.oslaunch import _applescript_quote
 
     assert _applescript_quote('echo "a\\b"') == '"echo \\"a\\\\b\\""'
+
+
+def test_detach_splits_on_either_escape_key():
+    from fbx.core.vmconsole import DETACH_KEYS, _split_on_detach
+
+    assert _split_on_detach(b"hello", DETACH_KEYS) == (b"hello", False)
+    assert _split_on_detach(b"ab\x1dcd", DETACH_KEYS) == (b"ab", True)  # Ctrl-]
+    assert _split_on_detach(b"ab\x14cd", DETACH_KEYS) == (b"ab", True)  # Ctrl-T
+    assert _split_on_detach(b"a\x14b\x1d", DETACH_KEYS) == (b"a", True)  # first wins
+
+
+@pytest.mark.anyio
+@respx.mock
+async def test_preflight_copies_credentials_to_the_clipboard(monkeypatch):
+    monkeypatch.setattr("fbx.tui.screens.vm.oslaunch.can_spawn_terminal", lambda: True)
+    authorize()
+    _mock_dashboard_box()
+    _mock_vm_screen()
+    app = FbxApp(splash=False)
+    copied = []
+    async with app.run_test(size=(120, 40)) as pilot:
+        monkeypatch.setattr(app, "copy_to_clipboard", copied.append)
+        await _open(pilot, app, "vm", "vms")
+        await pilot.press("c")
+        await _settle(pilot, lambda: isinstance(app.screen, ConsolePreflightModal))
+        await pilot.press("p")
+        await pilot.press("u")
+        await _settle(pilot, lambda: len(copied) == 2)
+        assert copied == ["s3cretpw", "demo"]
+
+
+def test_warp_spawn_writes_a_tab_config_and_opens_its_uri(monkeypatch, tmp_path):
+    import fbx.tui.oslaunch as oslaunch
+
+    monkeypatch.setattr(oslaunch.Path, "home", lambda: tmp_path)
+    runs = []
+
+    def fake_run(argv, **kwargs):
+        runs.append(argv)
+
+        class Done:
+            returncode = 0
+
+        return Done()
+
+    monkeypatch.setattr(oslaunch.subprocess, "run", fake_run)
+    assert oslaunch._spawn_warp("fbx vm console 1") is True
+    config = (tmp_path / ".warp" / "tab_configs" / "fbx-console.toml").read_text()
+    assert 'commands = ["fbx vm console 1"]' in config
+    assert runs == [["open", "warp://tab_config/fbx-console?new_window=true"]]

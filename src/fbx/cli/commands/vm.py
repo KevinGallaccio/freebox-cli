@@ -308,14 +308,17 @@ def console(
     ctx: typer.Context,
     vm_id: int = typer.Argument(..., help="VM id."),
 ) -> None:
-    """Attach to a VM's serial console (Ctrl-] to detach)."""
+    """Attach to a VM's serial console (Ctrl-T or Ctrl-] to detach)."""
     from ..main import handle_errors
 
     state: ui.CliState = ctx.obj
     with handle_errors():
         fbx = core_client.connect(state.profile, host=state.host)
         with fbx:
-            ui.info(f"[dim]attached to VM {vm_id} serial console — press Ctrl-] to detach[/]")
+            ui.info(
+                f"[dim]attached to VM {vm_id} serial console — "
+                f"{vmconsole.DETACH_HINT} detaches[/]"
+            )
             vmconsole.console_runner(fbx, vm_id)
     ui.info("[dim]detached.[/]")
 
