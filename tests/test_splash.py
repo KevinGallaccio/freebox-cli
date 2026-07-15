@@ -51,3 +51,15 @@ async def test_any_key_skips_and_q_does_not_quit(monkeypatch):
         # Back never pops past the dashboard floor, splash or not.
         await pilot.press("escape")
         assert isinstance(app.screen, DashboardScreen)
+
+
+@pytest.mark.anyio
+@respx.mock
+async def test_breakpoints_apply_even_when_launch_is_covered_by_the_splash(monkeypatch):
+    monkeypatch.setattr(SplashScreen, "DURATION", 0.05)
+    authorize()
+    _mock_dashboard_box()
+    app = FbxApp()
+    async with app.run_test(size=(200, 40)) as pilot:
+        await _settle(pilot, lambda: isinstance(app.screen, DashboardScreen))
+        await _settle(pilot, lambda: app.screen.has_class("-w4"))
