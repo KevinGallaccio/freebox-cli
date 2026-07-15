@@ -39,6 +39,13 @@ jobs:
         with:
           name: dist
           path: dist/
+      # The Claude Desktop extension goes in its own artifact so the PyPI
+      # publisher (which uploads dist/* wholesale) never sees a .mcpb file.
+      - run: uv run scripts/build_mcpb.py --out bundle/freebox-cli.mcpb
+      - uses: actions/upload-artifact@v7
+        with:
+          name: mcpb
+          path: bundle/
 
   publish-pypi:
     needs: build
@@ -66,10 +73,16 @@ jobs:
         with:
           name: dist
           path: dist/
+      - uses: actions/download-artifact@v8
+        with:
+          name: mcpb
+          path: bundle/
       - name: Create the GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" dist/* --title "$GITHUB_REF_NAME" --generate-notes
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/* bundle/* \
+            --title "$GITHUB_REF_NAME" --generate-notes
 
   homebrew:
     # Regenerates Formula/freebox-cli.rb in KevinGallaccio/homebrew-tap from this
