@@ -6,6 +6,7 @@ from typing import Any
 
 from textual import work
 from textual.binding import Binding
+from textual.css.query import NoMatches
 from textual.screen import Screen
 
 from ..support import BoxCallError
@@ -53,6 +54,13 @@ class BoxScreen(Screen):
             await self.refresh_data()
         except BoxCallError:
             self._skip_ticks = self.ERROR_BACKOFF_TICKS
+        except NoMatches:
+            # A refresh can outlive its screen: covered or torn down while a
+            # slow fetch was in flight (e.g. app exit mid-pass). Rendering
+            # into gone DOM is a no-op then — but a missing widget on the
+            # live, current screen is a real bug and must stay loud.
+            if self.is_attached and self.is_current:
+                raise
 
     async def refresh_data(self) -> None:
         raise NotImplementedError
