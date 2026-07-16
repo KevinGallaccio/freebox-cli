@@ -11,10 +11,12 @@ from textual.containers import Container, Grid, Horizontal, Vertical
 from textual.widgets import Footer, Header, OptionList, Static
 from textual.widgets.option_list import Option
 
-from ...cli import fmt
 from ...core.api import calls, connection, downloads, lan, storage, system, vm, wifi
+from .. import fmt
+from ..i18n import _, _p
 from ..suggestions import Suggestion, suggest
 from ..support import BoxCallError
+from ..widgets import LanguageModal
 from . import DOMAINS
 from ._base import BoxScreen
 
@@ -43,6 +45,7 @@ class DashboardScreen(BoxScreen):
 
     BINDINGS = [
         Binding("escape", "app.back", "Back", show=False),
+        Binding("l", "language", "Language"),
     ]
 
     def __init__(self) -> None:
@@ -57,9 +60,12 @@ class DashboardScreen(BoxScreen):
         yield Header()
         with Horizontal(id="dash-body"):
             with Vertical(id="dash-menu-pane"):
-                yield Static("Go to", classes="pane-title")
+                yield Static(_("Go to"), classes="pane-title")
                 yield OptionList(
-                    *(Option(f"{d.title} — {d.blurb}", id=d.key) for d in DOMAINS.values()),
+                    *(
+                        Option(f"{_(d.title)} — {_(d.blurb)}", id=d.key)
+                        for d in DOMAINS.values()
+                    ),
                     id="dash-menu",
                 )
             with Container(id="dash-tiles-area"):
@@ -67,7 +73,7 @@ class DashboardScreen(BoxScreen):
                     for tile in _TILES:
                         yield Static("…", id=f"tile-{tile}", classes="tile")
         with Vertical(id="dash-suggestions-pane"):
-            yield Static("Suggestions", classes="pane-title")
+            yield Static(_("Suggestions"), classes="pane-title")
             yield OptionList(id="dash-suggestions")
         yield Footer()
 
@@ -107,8 +113,8 @@ class DashboardScreen(BoxScreen):
         state = str(conn.get("state") or "?")
         dot = "[green]●[/]" if state == "up" else "[red]●[/]"
         self._tile("connection").update(
-            "[b]Connection[/b]\n"
-            f"{dot} {fmt.safe(state)} · {fmt.safe(conn.get('media'))}\n"
+            f"[b]{_('Connection')}[/b]\n"
+            f"{dot} {fmt.safe(_p('state', state))} · {fmt.safe(conn.get('media'))}\n"
             f"↓ {fmt.human_rate(conn.get('rate_down'))}   ↑ {fmt.human_rate(conn.get('rate_up'))}\n"
             f"IPv4 {fmt.safe(conn.get('ipv4'))}"
         )
@@ -122,10 +128,12 @@ class DashboardScreen(BoxScreen):
         ]
         hottest = f" · {max(temps)}°C max" if temps else ""
         self._tile("system").update(
-            "[b]System[/b]\n"
+            f"[b]{_('System')}[/b]\n"
             f"{fmt.safe(model.get('pretty_name') or d.get('board_name'))}\n"
-            f"firmware {fmt.safe(d.get('firmware_version'))}\n"
-            f"up {fmt.safe(d.get('uptime'))}{hottest}"
+            + _("firmware {version}").format(version=fmt.safe(d.get("firmware_version")))
+            + "\n"
+            + _("up {uptime}").format(uptime=fmt.safe(d.get("uptime")))
+            + hottest
         )
 
     def _render_slow(self) -> None:
@@ -134,43 +142,65 @@ class DashboardScreen(BoxScreen):
             st, cfg = a.get("status") or {}, a.get("config") or {}
             channel = st.get("primary_channel") or cfg.get("primary_channel")
             radios.append(
-                f"{fmt.safe(a.get('name'))} ch {channel} · {fmt.safe(st.get('state'))}"
+                _("{name} ch {channel} · {state}").format(
+                    name=fmt.safe(a.get("name")),
+                    channel=channel,
+                    state=fmt.safe(_p("ap-state", str(st.get("state")))),
+                )
             )
-        self._tile("wifi").update("[b]Wi-Fi[/b]\n" + ("\n".join(radios) or "no radios"))
+        self._tile("wifi").update(
+            "[b]Wi-Fi[/b]\n" + ("\n".join(radios) or _("no radios"))
+        )
 
         devices = self._snap.get("lan_devices") or []
         active = sum(1 for h in devices if h.get("active"))
-        self._tile("lan").update(f"[b]Devices[/b]\n{active} active on the LAN")
+        self._tile("lan").update(
+            f"[b]{_('Devices')}[/b]\n" + _("{n} active on the LAN").format(n=active)
+        )
 
         vm_lines = []
         for v in self._snap.get("vms") or []:
             dot = "[green]●[/]" if v.get("status") == "running" else "[dim]○[/]"
-            vm_lines.append(f"{dot} {fmt.safe(v.get('name'))} — {fmt.safe(v.get('status'))}")
-        self._tile("vm").update("[b]VMs[/b]\n" + ("\n".join(vm_lines) or "none defined"))
+            vm_lines.append(
+                f"{dot} {fmt.safe(v.get('name'))} — "
+                f"{fmt.safe(_p('vm-status', str(v.get('status'))))}"
+            )
+        self._tile("vm").update(
+            "[b]VMs[/b]\n" + ("\n".join(vm_lines) or _("none defined"))
+        )
 
         part_lines = []
         for p in self._snap.get("partitions") or []:
             used, total = p.get("used_bytes"), p.get("total_bytes")
             if used and total:
                 part_lines.append(
-                    f"{fmt.safe(p.get('label'))} {round(100 * used / total)}% of "
-                    f"{fmt.human_bytes(total)}"
+                    _("{label} {pct}% of {total}").format(
+                        label=fmt.safe(p.get("label")),
+                        pct=round(100 * used / total),
+                        total=fmt.human_bytes(total),
+                    )
                 )
-        self._tile("storage").update("[b]Storage[/b]\n" + ("\n".join(part_lines) or "no disks"))
+        self._tile("storage").update(
+            f"[b]{_('Storage')}[/b]\n" + ("\n".join(part_lines) or _("no disks"))
+        )
 
         tasks = self._snap.get("downloads") or []
         downloading = sum(1 for t in tasks if t.get("status") == "downloading")
         rate = sum(t.get("rx_rate") or 0 for t in tasks if t.get("status") == "downloading")
         self._tile("downloads").update(
-            "[b]Downloads[/b]\n"
-            f"{len(tasks)} task(s), {downloading} active\n↓ {fmt.human_rate(rate)}"
+            f"[b]{_('Downloads')}[/b]\n"
+            + _("{n} task(s), {active} active").format(n=len(tasks), active=downloading)
+            + f"\n↓ {fmt.human_rate(rate)}"
         )
 
         missed = sum(
             1 for c in self._snap.get("calls") or [] if c.get("new") and c.get("type") == "missed"
         )
-        missed_line = f"[red]{missed} new missed call(s)[/]" if missed else "no new calls"
-        self._tile("calls").update(f"[b]Phone[/b]\n{missed_line}")
+        if missed:
+            missed_line = "[red]" + _("{n} new missed call(s)").format(n=missed) + "[/]"
+        else:
+            missed_line = _("no new calls")
+        self._tile("calls").update(f"[b]{_('Phone')}[/b]\n{missed_line}")
 
     def _update_suggestions(self) -> None:
         self._suggestions = suggest(self._snap)
@@ -182,7 +212,7 @@ class DashboardScreen(BoxScreen):
             )
         else:
             option_list.add_options(
-                [Option("Nothing pressing — the box looks tidy.", disabled=True)]
+                [Option(_("Nothing pressing — the box looks tidy."), disabled=True)]
             )
 
     # -- navigation ---------------------------------------------------------
@@ -197,4 +227,11 @@ class DashboardScreen(BoxScreen):
         if key in DOMAINS:
             self.app.open_domain(key)
         else:
-            self.notify(f"The {key} screen lands later in Phase 6.")
+            self.notify(_("The {key} screen lands later in Phase 6.").format(key=key))
+
+    def action_language(self) -> None:
+        # Callback style, not push_screen_wait: set_language tears this very
+        # screen down, which would cancel a waiting worker mid-await.
+        self.app.push_screen(
+            LanguageModal(), lambda code: code and self.app.set_language(code)
+        )

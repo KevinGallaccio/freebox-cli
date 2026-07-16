@@ -8,8 +8,9 @@ from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.widgets import DataTable, Footer, Header
 
-from ...cli import fmt
 from ...core.api import calls
+from .. import fmt
+from ..i18n import _, _p
 from ..support import BoxCallError
 from ..widgets import cursor_key, refill
 from ._base import BoxScreen
@@ -35,7 +36,7 @@ class CallsScreen(BoxScreen):
 
     def on_mount(self) -> None:
         self.query_one("#calls", DataTable).add_columns(
-            "When", "Type", "Number", "Name", "Duration", "New"
+            _("When"), _("Type"), _("Number"), _("Name"), _("Duration"), _("New")
         )
         super().on_mount()
 
@@ -47,7 +48,7 @@ class CallsScreen(BoxScreen):
             rows.append(
                 (
                     fmt.epoch(c.get("datetime")),
-                    Text(call_type, style=_TYPE_STYLE.get(call_type, "")),
+                    Text(_p("call-type", call_type), style=_TYPE_STYLE.get(call_type, "")),
                     str(c.get("number") or ""),
                     str(c.get("name") or ""),
                     fmt.duration(c.get("duration")),
@@ -74,7 +75,7 @@ class CallsScreen(BoxScreen):
             await self.box(calls.mark_all_read)
         except BoxCallError:
             return
-        self.notify("All calls marked read.")
+        self.notify(_("All calls marked read."))
         self.run_refresh()
 
     @work
@@ -82,7 +83,7 @@ class CallsScreen(BoxScreen):
         call_id = cursor_key(self.query_one("#calls", DataTable))
         if call_id is None:
             return
-        if not await self.confirm("Delete this call log entry?", confirm_label="Delete"):
+        if not await self.confirm(_("Delete this call log entry?"), confirm_label=_("Delete")):
             return
         try:
             await self.box(calls.delete_entry, int(call_id))
@@ -93,12 +94,13 @@ class CallsScreen(BoxScreen):
     @work
     async def action_clear_log(self) -> None:
         if not await self.confirm(
-            "Clear the WHOLE call log? This cannot be undone.", confirm_label="Clear log"
+            _("Clear the WHOLE call log? This cannot be undone."),
+            confirm_label=_("Clear log"),
         ):
             return
         try:
             await self.box(calls.delete_all)
         except BoxCallError:
             return
-        self.notify("Call log cleared.", severity="warning")
+        self.notify(_("Call log cleared."), severity="warning")
         self.run_refresh()

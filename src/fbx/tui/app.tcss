@@ -98,6 +98,26 @@ ConfirmModal {
     margin-left: 2;
 }
 
+/* ---------- language modal ---------- */
+
+LanguageModal {
+    align: center middle;
+}
+
+#lang-box {
+    width: 40;
+    max-width: 90%;
+    height: auto;
+    background: $surface;
+    border: thick $primary;
+    padding: 1 2;
+}
+
+#lang-title {
+    text-style: bold;
+    padding-bottom: 1;
+}
+
 /* ---------- form modal ---------- */
 
 FormModal {

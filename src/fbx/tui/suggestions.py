@@ -16,6 +16,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from .i18n import _
+
 
 @dataclass(frozen=True)
 class Suggestion:
@@ -29,46 +31,66 @@ def suggest(snap: dict) -> list[Suggestion]:
 
     conn = snap.get("connection") or {}
     if conn and conn.get("state") != "up":
-        out.append(Suggestion("WAN is not up — inspect the connection logs", "connection"))
+        out.append(Suggestion(_("WAN is not up — inspect the connection logs"), "connection"))
 
     wps = snap.get("wps") or {}
     if wps.get("enabled"):
         out.append(
             Suggestion(
-                "Wi-Fi WPS is enabled — a known attack surface; consider disabling it", "wifi"
+                _("Wi-Fi WPS is enabled — a known attack surface; consider disabling it"),
+                "wifi",
             )
         )
 
     tasks = snap.get("downloads") or []
     done = sum(1 for t in tasks if t.get("status") == "done")
     if done:
-        out.append(Suggestion(f"{done} finished download(s) — clean up the list", "downloads"))
+        out.append(
+            Suggestion(
+                _("{n} finished download(s) — clean up the list").format(n=done), "downloads"
+            )
+        )
     errored = sum(1 for t in tasks if t.get("status") == "error")
     if errored:
-        out.append(Suggestion(f"{errored} download(s) in error — inspect them", "downloads"))
+        out.append(
+            Suggestion(
+                _("{n} download(s) in error — inspect them").format(n=errored), "downloads"
+            )
+        )
 
     for v in snap.get("vms") or []:
         if v.get("status") == "stopped":
             name = v.get("name") or f"#{v.get('id')}"
-            out.append(Suggestion(f"VM '{name}' is stopped — start it?", "vm"))
+            out.append(Suggestion(_("VM '{name}' is stopped — start it?").format(name=name), "vm"))
 
     for p in snap.get("partitions") or []:
         used, total = p.get("used_bytes"), p.get("total_bytes")
         if used and total and used / total > 0.9:
             label = p.get("label") or p.get("path") or f"#{p.get('id')}"
             pct = round(100 * used / total)
-            out.append(Suggestion(f"Partition '{label}' is {pct}% full — free up space", "storage"))
+            out.append(
+                Suggestion(
+                    _("Partition '{label}' is {pct}% full — free up space").format(
+                        label=label, pct=pct
+                    ),
+                    "storage",
+                )
+            )
 
     missed = sum(1 for c in snap.get("calls") or [] if c.get("new") and c.get("type") == "missed")
     if missed:
-        out.append(Suggestion(f"{missed} new missed call(s) — review the log", "calls"))
+        out.append(
+            Suggestion(_("{n} new missed call(s) — review the log").format(n=missed), "calls")
+        )
 
     unnamed = sum(
         1 for h in snap.get("lan_devices") or [] if h.get("active") and not h.get("primary_name")
     )
     if unnamed:
         out.append(
-            Suggestion(f"{unnamed} active device(s) without a name — label them", "lan")
+            Suggestion(
+                _("{n} active device(s) without a name — label them").format(n=unnamed), "lan"
+            )
         )
 
     return out

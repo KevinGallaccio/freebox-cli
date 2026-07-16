@@ -13,8 +13,9 @@ from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.widgets import DataTable, Footer, Header, Static, TabbedContent, TabPane
 
-from ...cli import fmt
 from ...core.api import wifi
+from .. import fmt
+from ..i18n import _, _p
 from ..support import BoxCallError
 from ..widgets import Field, FormModal, TextModal, cursor_key, refill
 from ._base import BoxScreen
@@ -44,30 +45,32 @@ class WifiScreen(BoxScreen):
         yield Header()
         yield Static("…", id="wifi-summary", classes="panel")
         with TabbedContent():
-            with TabPane("Radios", id="tab-radios"):
+            with TabPane(_("Radios"), id="tab-radios"):
                 yield DataTable(id="aps", cursor_type="row")
                 yield Static("", id="neighbors-title", classes="pane-title")
                 yield DataTable(id="neighbors", cursor_type="row")
-            with TabPane("Networks", id="tab-bss"):
+            with TabPane(_("Networks"), id="tab-bss"):
                 yield DataTable(id="bss", cursor_type="row")
-            with TabPane("Clients", id="tab-stations"):
+            with TabPane(_("Clients"), id="tab-stations"):
                 yield DataTable(id="stations", cursor_type="row")
-            with TabPane("MAC filter", id="tab-filter"):
+            with TabPane(_("MAC filter"), id="tab-filter"):
                 yield DataTable(id="filters", cursor_type="row")
         yield Footer()
 
     def on_mount(self) -> None:
         self.query_one("#aps", DataTable).add_columns(
-            "Id", "Radio", "Band", "Channel", "Width", "State"
+            "Id", _("Radio"), _("Band"), _("Channel"), _("Width"), _("State")
         )
         self.query_one("#neighbors", DataTable).add_columns(
-            "SSID", "BSSID", "Band", "Channel", "Signal"
+            "SSID", "BSSID", _("Band"), _("Channel"), _("Signal")
         )
-        self.query_one("#bss", DataTable).add_columns("SSID", "BSSID", "Enabled", "Security")
+        self.query_one("#bss", DataTable).add_columns(
+            "SSID", "BSSID", _("Enabled"), _("Security")
+        )
         self.query_one("#stations", DataTable).add_columns(
-            "Name", "MAC", "AP", "Band", "Signal", "Rate ↓/↑", "Connected"
+            _("Name"), "MAC", _("AP"), _("Band"), _("Signal"), _("Rate ↓/↑"), _("Connected")
         )
-        self.query_one("#filters", DataTable).add_columns("MAC", "Type", "Comment")
+        self.query_one("#filters", DataTable).add_columns("MAC", _("Type"), _("Comment"))
         super().on_mount()
 
     async def refresh_data(self) -> None:
@@ -75,7 +78,8 @@ class WifiScreen(BoxScreen):
         self._wps = await self.box(wifi.wps_config)
         self.query_one("#wifi-summary", Static).update(
             f"Wi-Fi {fmt.onoff(self._config.get('enabled'))} · "
-            f"MAC filter {fmt.safe(self._config.get('mac_filter_state'))} · "
+            f"{_('MAC filter')} "
+            f"{fmt.safe(_p('mac-filter', str(self._config.get('mac_filter_state'))))} · "
             f"WPS {fmt.onoff(self._wps.get('enabled'))}"
         )
 
@@ -90,7 +94,7 @@ class WifiScreen(BoxScreen):
                     str(cfg.get("band") or ""),
                     str(st.get("primary_channel") or cfg.get("primary_channel") or ""),
                     str(st.get("channel_width") or cfg.get("channel_width") or ""),
-                    str(st.get("state") or ""),
+                    _p("ap-state", str(st.get("state") or "")),
                 )
             )
         refill(
@@ -162,30 +166,30 @@ class WifiScreen(BoxScreen):
             if key and (ssid, key) not in pairs:
                 pairs.append((ssid, key))
         if not pairs:
-            self.notify("No Wi-Fi key to show.", severity="warning")
+            self.notify(_("No Wi-Fi key to show."), severity="warning")
             return
         body = "\n".join(f"{ssid}\n  {key}" for ssid, key in pairs)
-        await self.app.push_screen_wait(TextModal("Wi-Fi passphrase", body))
+        await self.app.push_screen_wait(TextModal(_("Wi-Fi passphrase"), body))
 
     @work
     async def action_survey(self) -> None:
         ap_id = cursor_key(self.query_one("#aps", DataTable))
         if ap_id is None:
             return
-        self.notify(f"Scanning neighbors from AP {ap_id}…")
+        self.notify(_("Scanning neighbors from AP {ap}…").format(ap=ap_id))
         try:
             await self.box(wifi.neighbors_scan, int(ap_id))
             neighbors = await self.box(wifi.neighbors, int(ap_id))
         except BoxCallError:
             return
         self.query_one("#neighbors-title", Static).update(
-            f"What AP {ap_id} hears — {len(neighbors)} network(s)"
+            _("What AP {ap} hears — {n} network(s)").format(ap=ap_id, n=len(neighbors))
         )
         rows = []
         for n in sorted(neighbors, key=lambda x: x.get("signal", -999), reverse=True):
             rows.append(
                 (
-                    Text(str(n.get("ssid") or "(hidden)")),
+                    Text(str(n.get("ssid") or _("(hidden)"))),
                     str(n.get("bssid") or ""),
                     str(n.get("band") or ""),
                     str(n.get("channel") or ""),
@@ -198,12 +202,12 @@ class WifiScreen(BoxScreen):
     async def action_temp_disable(self) -> None:
         values = await self.app.push_screen_wait(
             FormModal(
-                "Temporarily disable Wi-Fi",
+                _("Temporarily disable Wi-Fi"),
                 [
-                    Field("minutes", "Minutes", default="5"),
-                    Field("keep", "Band to keep up (optional)", placeholder="2d4g"),
+                    Field("minutes", _("Minutes"), default="5"),
+                    Field("keep", _("Band to keep up (optional)"), placeholder="2d4g"),
                 ],
-                submit_label="Disable",
+                submit_label=_("Disable"),
             )
         )
         if not values or not values["minutes"]:
@@ -211,36 +215,41 @@ class WifiScreen(BoxScreen):
         try:
             minutes = int(values["minutes"])
         except ValueError:
-            self.notify("Minutes must be a number.", severity="error")
+            self.notify(_("Minutes must be a number."), severity="error")
             return
         keep = values["keep"] or None
-        kept = f" (keeping {keep})" if keep else ""
+        kept = _(" (keeping {band})").format(band=keep) if keep else ""
         if not await self.confirm(
-            f"Disable Wi-Fi for {minutes} min{kept}? If this machine is on Wi-Fi "
-            "you WILL lose it until the timer ends.",
-            confirm_label="Disable Wi-Fi",
+            _(
+                "Disable Wi-Fi for {minutes} min{kept}? If this machine is on Wi-Fi "
+                "you WILL lose it until the timer ends."
+            ).format(minutes=minutes, kept=kept),
+            confirm_label=_("Disable Wi-Fi"),
         ):
             return
         try:
             await self.box(wifi.temp_disable, duration=minutes * 60, keep=keep)
         except BoxCallError:
             return
-        self.notify(f"Wi-Fi disabled for {minutes} min{kept}.", severity="warning")
+        self.notify(
+            _("Wi-Fi disabled for {minutes} min{kept}.").format(minutes=minutes, kept=kept),
+            severity="warning",
+        )
         self.run_refresh()
 
     @work
     async def action_toggle_wifi(self) -> None:
         enabled = bool(self._config.get("enabled"))
         if enabled and not await self.confirm(
-            "Turn Wi-Fi OFF globally? If this machine is on Wi-Fi you will lose it.",
-            confirm_label="Turn off",
+            _("Turn Wi-Fi OFF globally? If this machine is on Wi-Fi you will lose it."),
+            confirm_label=_("Turn off"),
         ):
             return
         try:
             await self.box(wifi.set_config, {"enabled": not enabled})
         except BoxCallError:
             return
-        self.notify(f"Wi-Fi {'disabled' if enabled else 'enabled'}.")
+        self.notify(_("Wi-Fi disabled.") if enabled else _("Wi-Fi enabled."))
         self.run_refresh()
 
     @work
@@ -250,20 +259,25 @@ class WifiScreen(BoxScreen):
             await self.box(wifi.set_wps, not enabled)
         except BoxCallError:
             return
-        self.notify(f"WPS {'disabled' if enabled else 'enabled'}.")
+        self.notify(_("WPS disabled.") if enabled else _("WPS enabled."))
         self.run_refresh()
 
     @work
     async def action_add_filter(self) -> None:
         values = await self.app.push_screen_wait(
             FormModal(
-                "New MAC filter entry",
+                _("New MAC filter entry"),
                 [
-                    Field("mac", "MAC address", placeholder="aa:bb:cc:dd:ee:ff"),
-                    Field("type", "Type", default="blacklist", placeholder="blacklist | whitelist"),
-                    Field("comment", "Comment (optional)"),
+                    Field("mac", _("MAC address"), placeholder="aa:bb:cc:dd:ee:ff"),
+                    Field(
+                        "type",
+                        _("Type"),
+                        default="blacklist",
+                        placeholder="blacklist | whitelist",
+                    ),
+                    Field("comment", _("Comment (optional)")),
                 ],
-                submit_label="Add",
+                submit_label=_("Add"),
             )
         )
         if not values or not values["mac"]:
@@ -286,8 +300,10 @@ class WifiScreen(BoxScreen):
             return
         entry = self._filter_by_id.get(filter_id, {})
         if not await self.confirm(
-            f"Delete the {entry.get('type')} entry for {entry.get('mac')}?",
-            confirm_label="Delete",
+            _("Delete the {type} entry for {mac}?").format(
+                type=_p("mac-filter", str(entry.get("type"))), mac=entry.get("mac")
+            ),
+            confirm_label=_("Delete"),
         ):
             return
         try:

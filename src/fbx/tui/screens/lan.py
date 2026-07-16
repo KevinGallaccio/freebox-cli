@@ -8,8 +8,9 @@ from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.widgets import DataTable, Footer, Header
 
-from ...cli import fmt
 from ...core.api import lan
+from .. import fmt
+from ..i18n import _
 from ..support import BoxCallError
 from ..widgets import Field, FormModal, cursor_key, refill
 from ._base import BoxScreen
@@ -45,7 +46,7 @@ class LanScreen(BoxScreen):
     def on_mount(self) -> None:
         self._show_all = self.app.prefs.get("screens.lan.show") == "all"
         self.query_one("#hosts", DataTable).add_columns(
-            "", "Name", "IPv4", "MAC", "Type", "Last seen"
+            "", _("Name"), "IPv4", "MAC", _("Type"), _("Last seen")
         )
         super().on_mount()
 
@@ -69,7 +70,8 @@ class LanScreen(BoxScreen):
                 )
             )
         refill(self.query_one("#hosts", DataTable), rows, list(self._by_id))
-        self.sub_title = f"{len(hosts)} host(s) — {'all known' if self._show_all else 'active'}"
+        scope = _("all known") if self._show_all else _("active")
+        self.sub_title = _("{n} host(s) — {scope}").format(n=len(hosts), scope=scope)
 
     def action_toggle_all(self) -> None:
         self._show_all = not self._show_all
@@ -84,9 +86,9 @@ class LanScreen(BoxScreen):
         current = self._by_id.get(host_id, {})
         values = await self.app.push_screen_wait(
             FormModal(
-                "Rename device",
-                [Field("name", "Name", default=str(current.get("primary_name") or ""))],
-                submit_label="Rename",
+                _("Rename device"),
+                [Field("name", _("Name"), default=str(current.get("primary_name") or ""))],
+                submit_label=_("Rename"),
             )
         )
         if not values or not values["name"]:
@@ -105,10 +107,10 @@ class LanScreen(BoxScreen):
         host = self._by_id.get(host_id, {})
         mac = (host.get("l2ident") or {}).get("id")
         if not mac:
-            self.notify("No MAC for this host.", severity="warning")
+            self.notify(_("No MAC for this host."), severity="warning")
             return
         try:
             await self.box(lan.wake, mac)
         except BoxCallError:
             return
-        self.notify(f"Wake-on-LAN sent to {mac}.")
+        self.notify(_("Wake-on-LAN sent to {mac}.").format(mac=mac))

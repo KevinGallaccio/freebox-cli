@@ -7,8 +7,9 @@ from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.widgets import DataTable, Footer, Header, Static, TabbedContent, TabPane
 
-from ...cli import fmt
 from ...core.api import dhcp
+from .. import fmt
+from ..i18n import _
 from ..support import BoxCallError
 from ..widgets import Field, FormModal, cursor_key, refill
 from ._base import BoxScreen
@@ -32,18 +33,18 @@ class DhcpScreen(BoxScreen):
         yield Header()
         yield Static("…", id="dhcp-config", classes="panel")
         with TabbedContent():
-            with TabPane("Static reservations", id="tab-static"):
+            with TabPane(_("Static reservations"), id="tab-static"):
                 yield DataTable(id="static-leases", cursor_type="row")
-            with TabPane("Active leases", id="tab-dynamic"):
+            with TabPane(_("Active leases"), id="tab-dynamic"):
                 yield DataTable(id="dynamic-leases", cursor_type="row")
         yield Footer()
 
     def on_mount(self) -> None:
         self.query_one("#static-leases", DataTable).add_columns(
-            "Hostname", "IP", "MAC", "Comment"
+            _("Hostname"), "IP", "MAC", _("Comment")
         )
         self.query_one("#dynamic-leases", DataTable).add_columns(
-            "Hostname", "IP", "MAC", "Assigned", "Remaining", "Static"
+            _("Hostname"), "IP", "MAC", _("Assigned"), _("Remaining"), _("Static")
         )
         super().on_mount()
 
@@ -52,7 +53,7 @@ class DhcpScreen(BoxScreen):
         dns = ", ".join(config.get("dns") or [])
         self.query_one("#dhcp-config", Static).update(
             f"DHCP {fmt.onoff(config.get('enabled'))} · "
-            f"range {fmt.safe(config.get('ip_range_start'))} – "
+            f"{_('range')} {fmt.safe(config.get('ip_range_start'))} – "
             f"{fmt.safe(config.get('ip_range_end'))} · DNS {fmt.safe(dns)}"
         )
 
@@ -82,7 +83,7 @@ class DhcpScreen(BoxScreen):
                     str(lease.get("mac") or ""),
                     fmt.epoch(lease.get("assign_time")),
                     fmt.duration(lease.get("lease_remaining")),
-                    "yes" if lease.get("is_static") else "",
+                    _("yes") if lease.get("is_static") else "",
                 )
                 for lease in dynamic
             ],
@@ -92,13 +93,13 @@ class DhcpScreen(BoxScreen):
     async def action_add_static(self) -> None:
         values = await self.app.push_screen_wait(
             FormModal(
-                "Reserve an IP",
+                _("Reserve an IP"),
                 [
-                    Field("mac", "MAC address", placeholder="aa:bb:cc:dd:ee:ff"),
-                    Field("ip", "IPv4 address", placeholder="192.168.1.x"),
-                    Field("comment", "Comment (optional)"),
+                    Field("mac", _("MAC address"), placeholder="aa:bb:cc:dd:ee:ff"),
+                    Field("ip", _("IPv4 address"), placeholder="192.168.1.x"),
+                    Field("comment", _("Comment (optional)")),
                 ],
-                submit_label="Reserve",
+                submit_label=_("Reserve"),
             )
         )
         if not values or not values["mac"] or not values["ip"]:
@@ -112,7 +113,7 @@ class DhcpScreen(BoxScreen):
             )
         except BoxCallError:
             return
-        self.notify(f"Reserved {values['ip']} for {values['mac']}.")
+        self.notify(_("Reserved {ip} for {mac}.").format(ip=values["ip"], mac=values["mac"]))
         self.run_refresh()
 
     @work
@@ -123,10 +124,10 @@ class DhcpScreen(BoxScreen):
         current = self._static_by_id.get(lease_id, {})
         values = await self.app.push_screen_wait(
             FormModal(
-                "Edit reservation",
+                _("Edit reservation"),
                 [
-                    Field("ip", "IPv4 address", default=str(current.get("ip") or "")),
-                    Field("comment", "Comment", default=str(current.get("comment") or "")),
+                    Field("ip", _("IPv4 address"), default=str(current.get("ip") or "")),
+                    Field("comment", _("Comment"), default=str(current.get("comment") or "")),
                 ],
             )
         )
@@ -149,8 +150,10 @@ class DhcpScreen(BoxScreen):
             return
         lease = self._static_by_id.get(lease_id, {})
         if not await self.confirm(
-            f"Delete the reservation of {lease.get('ip')} for {lease.get('mac')}?",
-            confirm_label="Delete",
+            _("Delete the reservation of {ip} for {mac}?").format(
+                ip=lease.get("ip"), mac=lease.get("mac")
+            ),
+            confirm_label=_("Delete"),
         ):
             return
         try:

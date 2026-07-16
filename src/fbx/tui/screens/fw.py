@@ -7,8 +7,9 @@ from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.widgets import DataTable, Footer, Header, Static, TabbedContent, TabPane
 
-from ...cli import fmt
 from ...core.api import fw
+from .. import fmt
+from ..i18n import _
 from ..support import BoxCallError
 from ..widgets import Field, FormModal, cursor_key, refill
 from ._base import BoxScreen
@@ -38,11 +39,11 @@ class FwScreen(BoxScreen):
     def compose(self) -> ComposeResult:
         yield Header()
         with TabbedContent():
-            with TabPane("Port forwards", id="tab-redirs"):
+            with TabPane(_("Port forwards"), id="tab-redirs"):
                 yield DataTable(id="redirs", cursor_type="row")
             with TabPane("DMZ", id="tab-dmz"):
                 yield Static("…", id="dmz", classes="panel")
-            with TabPane("Incoming services", id="tab-incoming"):
+            with TabPane(_("Incoming services"), id="tab-incoming"):
                 yield DataTable(id="incoming", cursor_type="row")
             with TabPane("UPnP", id="tab-upnp"):
                 yield Static("…", id="upnp-config", classes="panel")
@@ -51,11 +52,11 @@ class FwScreen(BoxScreen):
 
     def on_mount(self) -> None:
         self.query_one("#redirs", DataTable).add_columns(
-            "On", "Proto", "WAN port", "→ LAN", "Source", "Comment"
+            _("On"), _("Proto"), _("WAN port"), "→ LAN", _("Source"), _("Comment")
         )
-        self.query_one("#incoming", DataTable).add_columns("Service", "On", "Port(s)")
+        self.query_one("#incoming", DataTable).add_columns(_("Service"), _("On"), _("Port(s)"))
         self.query_one("#upnp-redirs", DataTable).add_columns(
-            "Proto", "WAN port", "→ LAN", "Description"
+            _("Proto"), _("WAN port"), "→ LAN", _("Description")
         )
         super().on_mount()
 
@@ -118,15 +119,15 @@ class FwScreen(BoxScreen):
     async def action_add_redir(self) -> None:
         values = await self.app.push_screen_wait(
             FormModal(
-                "New port forward",
+                _("New port forward"),
                 [
-                    Field("lan_ip", "LAN IP", placeholder="192.168.1.x"),
-                    Field("lan_port", "LAN port"),
-                    Field("wan_port", "WAN port (this box allows 16384-32767)"),
-                    Field("proto", "Protocol", default="tcp", placeholder="tcp | udp"),
-                    Field("comment", "Comment (optional)"),
+                    Field("lan_ip", _("LAN IP"), placeholder="192.168.1.x"),
+                    Field("lan_port", _("LAN port")),
+                    Field("wan_port", _("WAN port (this box allows 16384-32767)")),
+                    Field("proto", _("Protocol"), default="tcp", placeholder="tcp | udp"),
+                    Field("comment", _("Comment (optional)")),
                 ],
-                submit_label="Forward",
+                submit_label=_("Forward"),
             )
         )
         if not values or not (values["lan_ip"] and values["lan_port"] and values["wan_port"]):
@@ -134,7 +135,7 @@ class FwScreen(BoxScreen):
         try:
             wan, lan_port = int(values["wan_port"]), int(values["lan_port"])
         except ValueError:
-            self.notify("Ports must be numbers.", severity="error")
+            self.notify(_("Ports must be numbers."), severity="error")
             return
         fields = {
             "enabled": True,
@@ -150,7 +151,11 @@ class FwScreen(BoxScreen):
             await self.box(fw.create_redir, fields)
         except BoxCallError:
             return
-        self.notify(f"Forwarded WAN {wan} → {values['lan_ip']}:{lan_port}.")
+        self.notify(
+            _("Forwarded WAN {wan} → {ip}:{port}.").format(
+                wan=wan, ip=values["lan_ip"], port=lan_port
+            )
+        )
         self.run_refresh()
 
     @work
@@ -173,9 +178,10 @@ class FwScreen(BoxScreen):
             return
         rule = self._redir_by_id.get(redir_id, {})
         if not await self.confirm(
-            f"Delete the forward WAN {_wan_ports(rule)} → "
-            f"{rule.get('lan_ip')}:{rule.get('lan_port')}?",
-            confirm_label="Delete",
+            _("Delete the forward WAN {wan} → {ip}:{port}?").format(
+                wan=_wan_ports(rule), ip=rule.get("lan_ip"), port=rule.get("lan_port")
+            ),
+            confirm_label=_("Delete"),
         ):
             return
         try:
@@ -188,9 +194,9 @@ class FwScreen(BoxScreen):
     async def action_set_dmz(self) -> None:
         values = await self.app.push_screen_wait(
             FormModal(
-                "DMZ host (leave empty to disable)",
-                [Field("ip", "LAN IP", default=str(self._dmz.get("ip") or ""))],
-                submit_label="Apply",
+                _("DMZ host (leave empty to disable)"),
+                [Field("ip", _("LAN IP"), default=str(self._dmz.get("ip") or ""))],
+                submit_label=_("Apply"),
             )
         )
         if values is None:
@@ -198,8 +204,8 @@ class FwScreen(BoxScreen):
         ip = values["ip"]
         if ip:
             if not await self.confirm(
-                f"Expose {ip} to the whole internet as the DMZ host?",
-                confirm_label="Expose",
+                _("Expose {ip} to the whole internet as the DMZ host?").format(ip=ip),
+                confirm_label=_("Expose"),
             ):
                 return
             fields = {"enabled": True, "ip": ip}
@@ -209,5 +215,5 @@ class FwScreen(BoxScreen):
             await self.box(fw.set_dmz, fields)
         except BoxCallError:
             return
-        self.notify("DMZ updated.")
+        self.notify(_("DMZ updated."))
         self.run_refresh()

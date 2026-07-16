@@ -9,6 +9,7 @@ from textual.binding import Binding
 from textual.css.query import NoMatches
 from textual.screen import Screen
 
+from .. import i18n
 from ..support import BoxCallError
 from ..widgets import ConfirmModal
 
@@ -30,6 +31,7 @@ class BoxScreen(Screen):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
+        i18n.translate_bindings(self)
         self._skip_ticks = 0
 
     def on_mount(self) -> None:
