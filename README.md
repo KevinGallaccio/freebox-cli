@@ -253,9 +253,13 @@ Cowork) ; il voit en revanche les **connecteurs**. L'extension comble ce
 trou : téléchargez `freebox-cli.mcpb` depuis la [dernière
 release](https://github.com/KevinGallaccio/freebox-cli/releases),
 double-cliquez (ou Réglages → Extensions), activez fbx dans le menu outils
-de la conversation. Seul prérequis : `uv`. Box pas encore appairée ?
-Demandez à Claude d'appairer — l'outil `fbx_auth_enroll` vous enverra
-appuyer sur ▶.
+de la conversation. Seul prérequis : `uv`. Au premier lancement, comptez
+~30 s — uv construit l'environnement, une seule fois. Par défaut le chat
+demande une approbation à **chaque** appel d'outil : dans Connecteurs →
+freebox-cli → Autorisations des outils, passez le groupe « lecture seule »
+sur *Toujours autoriser* et laissez les écritures sous approbation — c'est
+la bonne posture. Box pas encore appairée ? Demandez à Claude d'appairer —
+l'outil `fbx_auth_enroll` vous enverra appuyer sur ▶.
 
 <details>
 <summary><strong>N'importe quel client MCP (Cursor, Zed, …)</strong></summary>
@@ -383,7 +387,9 @@ For agents: `fbx mcp serve`; in Claude Code
 `/plugin marketplace add KevinGallaccio/freebox-cli` then
 `/plugin install fbx@fbx`; in Claude Desktop **chat**, install
 `freebox-cli.mcpb` from the latest release (plugins only load in Code/Cowork
-sessions — the extension is what plain chat sees). Unpaired box? Ask Claude:
+sessions — the extension is what plain chat sees; first launch takes ~30 s,
+then bulk-allow the read-only group in the connector's Tool permissions to
+skip per-call approvals). Unpaired box? Ask Claude:
 the `fbx_auth_enroll` tool walks the user through the ▶-button pairing.
 Data on stdout, everything else on stderr; destructive operations prompt
 (bypass with `--yes`).

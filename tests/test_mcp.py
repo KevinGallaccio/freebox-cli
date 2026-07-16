@@ -616,6 +616,35 @@ def test_plugin_manifest_tracks_the_package():
     assert args[-2:] == ["mcp", "serve"]
 
 
+def test_mcpb_manifest_tracks_the_package():
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    import fbx
+
+    out = subprocess.run(
+        [sys.executable, "scripts/build_mcpb.py", "--print-manifest"],
+        capture_output=True, text=True, check=True,
+        cwd=Path(__file__).parent.parent,
+    )
+    manifest = json.loads(out.stdout)
+    # The bundle must pin the exact release: uv caches resolutions, so an
+    # unpinned spec would freeze users on whatever version they installed
+    # first (the plugin's v0.5.2 lesson, again).
+    assert manifest["version"] == fbx.__version__
+    cfg = manifest["server"]["mcp_config"]
+    assert cfg["command"] == "uvx"
+    assert f"freebox-cli[mcp]=={fbx.__version__}" in cfg["args"]
+    assert cfg["args"][-2:] == ["mcp", "serve"]
+    # Live-install lessons (Claude Desktop, 2026-07-16) — each of these broke
+    # a real install/chat attempt before being pinned here:
+    assert manifest["manifest_version"] == "0.2"  # newest shape the app's validators accept
+    assert manifest["server"]["entry_point"]  # required by every embedded schema version
+    display = manifest["display_name"]
+    assert display.isascii() and " " not in display  # fancy names get dropped chat-side
+
+
 def test_marketplace_entry_tracks_the_package():
     from pathlib import Path
 
@@ -629,30 +658,6 @@ def test_marketplace_entry_tracks_the_package():
     # Desktop "stuck at an old version" failure).
     (entry,) = marketplace["plugins"]
     assert entry["version"] == fbx.__version__
-
-
-def test_mcpb_manifest_tracks_the_package():
-    import subprocess
-    import sys
-    from pathlib import Path
-
-    import fbx
-
-    out = subprocess.run(
-        [sys.executable, "scripts/build_mcpb.py", "--print-manifest"],
-        capture_output=True,
-        text=True,
-        check=True,
-        cwd=Path(__file__).parent.parent,
-    )
-    manifest = json.loads(out.stdout)
-    assert manifest["version"] == fbx.__version__
-    # The Desktop extension must pin the exact release: uv resolves a spec once
-    # and caches it, so only a pinned==version makes a new bundle a new server.
-    config = manifest["server"]["mcp_config"]
-    assert config["command"] == "uvx"
-    assert f"freebox-cli[mcp]=={fbx.__version__}" in config["args"]
-    assert config["args"][-2:] == ["mcp", "serve"]
 
 
 # -- CLI surface ----------------------------------------------------------------

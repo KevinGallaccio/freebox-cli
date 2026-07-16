@@ -28,9 +28,16 @@ from fbx import __version__
 
 def manifest(version: str) -> dict:
     return {
-        "manifest_version": "0.4",
+        # 0.2, not the spec's latest: Claude Desktop validates installs against
+        # its embedded schemas, and 0.2 is the newest shape its whole schema
+        # family accepts (verified against the app bundle after a "0.4"
+        # manifest was rejected with `Invalid manifest: server: Required`).
+        "manifest_version": "0.2",
         "name": "freebox-cli",
-        "display_name": "fbx — Freebox",
+        # ASCII-only, no spaces: hosts derive MCP server/tool identifiers from
+        # this, and tool names are limited to [a-zA-Z0-9_-] — a pretty name
+        # like "fbx — Freebox" produced tools chat-side registries dropped.
+        "display_name": "freebox-cli",
         "version": version,
         "description": (
             "Drive a Freebox (Ultra) from Claude: connection, LAN, DHCP, port "
@@ -44,6 +51,9 @@ def manifest(version: str) -> dict:
         "keywords": ["freebox", "freebox-ultra", "router", "homelab", "mcp"],
         "server": {
             "type": "binary",
+            # Required by every schema version; informational here — the host
+            # executes mcp_config, and the "binary" we point at is uvx itself.
+            "entry_point": "uvx",
             "mcp_config": {
                 "command": "uvx",
                 "args": [
