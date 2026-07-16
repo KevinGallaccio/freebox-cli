@@ -8,6 +8,7 @@ import typer
 from rich.table import Table
 
 from ... import APP_ID, APP_NAME, __version__
+from ...core import auth as core_auth
 from ...core import client as core_client
 from ...core import credentials
 from ...core.errors import FbxError
@@ -57,6 +58,7 @@ def login(ctx: typer.Context) -> None:
             )
 
         granted = sorted(s for s, ok in fbx.permissions.items() if ok)
+        missing = sorted(core_auth.SCOPES_USED - set(granted))
         fbx.close()
 
     cred = credentials.load(state.profile)
@@ -64,6 +66,15 @@ def login(ctx: typer.Context) -> None:
     ui.info(
         f"Granted permissions: {', '.join(granted) if granted else '(none)'}", state
     )
+    if missing:
+        # Scope escalation is Freebox-OS-only by design; say so now instead of
+        # letting the user discover it as a mysterious failure later.
+        ui.warn(
+            f"Not yet granted: {', '.join(missing)}. Tick them once in Freebox OS "
+            "→ Paramètres → Gestion des accès → Applications (the newest fbx "
+            "entry) — `settings` unlocks the router-config writes. Older fbx "
+            "entries there are dead tokens from previous pairings; safe to delete."
+        )
 
 
 @app.command()
@@ -140,7 +151,6 @@ def logout(ctx: typer.Context) -> None:
 @app.command()
 def permissions(ctx: typer.Context) -> None:
     """List the permission scopes granted to this app on the box."""
-    from ...core import auth as core_auth
     from ..main import handle_errors
 
     state: ui.CliState = ctx.obj

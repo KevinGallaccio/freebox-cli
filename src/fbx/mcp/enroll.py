@@ -188,6 +188,19 @@ def _finish(rt: Any, track_id: int, pending: PendingEnrollment) -> dict:
         )
         with client:
             client.login()
+            granted = {s for s, ok in client.permissions.items() if ok}
+            missing = sorted(auth.SCOPES_USED - granted)
+            if missing:
+                result["permissions_missing"] = missing
+                result["grant_hint"] = (
+                    "The box only lets a human escalate scopes: grant these once "
+                    "in Freebox OS (http://mafreebox.freebox.fr) → Paramètres → "
+                    "Gestion des accès → Applications → the NEWEST fbx entry "
+                    "(admin password required). `settings` unlocks the "
+                    "router-config writes (Wi-Fi, DHCP, port forwarding…). "
+                    "Note: each pairing creates a new entry there — older fbx "
+                    "entries are dead tokens, safe to delete."
+                )
             result["permissions_granted"] = sorted(
                 s for s, ok in client.permissions.items() if ok
             )
