@@ -242,6 +242,31 @@ def test_suggestions_quiet_on_a_tidy_box():
 
 @pytest.mark.anyio
 @respx.mock
+async def test_refresh_worker_survives_widgets_torn_down_mid_pass():
+    # Teardown removes a screen's children BEFORE the screen stops being
+    # attached/current, so a refresh worker finishing a pass at that moment
+    # paints into gone DOM. NoMatches must never escape the worker — this
+    # was a CI-only flake in the *_survives_relaunch tests (the dashboard's
+    # slow pass raced app exit); here the gone-DOM state is forced directly.
+    from textual.worker import WorkerCancelled
+
+    authorize()
+    _mock_dashboard_box()
+    app = FbxApp(splash=False)
+    async with app.run_test() as pilot:
+        screen = app.screen
+        await screen.query_one("#dash-tiles").remove()
+        worker = screen._refresh_worker()
+        try:
+            await worker.wait()  # raises WorkerFailed if NoMatches escaped
+        except WorkerCancelled:
+            pass  # superseded by a poll tick — only a crash is a failure
+        await pilot.pause()
+    # Exiting run_test re-raises any worker crash; reaching here is the pass.
+
+
+@pytest.mark.anyio
+@respx.mock
 async def test_dashboard_columns_follow_terminal_width():
     authorize()
     _mock_dashboard_box()

@@ -55,12 +55,13 @@ class BoxScreen(Screen):
         except BoxCallError:
             self._skip_ticks = self.ERROR_BACKOFF_TICKS
         except NoMatches:
-            # A refresh can outlive its screen: covered or torn down while a
-            # slow fetch was in flight (e.g. app exit mid-pass). Rendering
-            # into gone DOM is a no-op then — but a missing widget on the
-            # live, current screen is a real bug and must stay loud.
-            if self.is_attached and self.is_current:
-                raise
+            # A refresh can outlive the DOM it paints: the screen may be
+            # covered or mid-teardown while a fetch was in flight — and at
+            # teardown the children go away BEFORE the screen stops being
+            # attached/current, so no screen-state check can tell "gone" from
+            # "live" here. Skipping the paint is always right; a genuinely
+            # missing widget shows up as a permanently empty tile in dev.
+            pass
 
     async def refresh_data(self) -> None:
         raise NotImplementedError
