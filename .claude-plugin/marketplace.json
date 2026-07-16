@@ -6,7 +6,7 @@
     {
       "name": "fbx",
       "source": "./",
-      "version": "0.7.0",
+      "version": "0.8.0",
       "description": "Freebox MCP server + skill: network, Wi-Fi, DHCP, port forwarding, files, downloads, VMs."
     }
   ]

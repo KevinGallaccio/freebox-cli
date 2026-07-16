@@ -1,6 +1,6 @@
 """fbx — a command-line interface for the Freebox Ultra."""
 
-__version__ = "0.7.0"
+__version__ = "0.8.0"
 
 # App identity registered with the box during authorization. Settled in the
 # project brief; do not change once published — the box keys the granted

@@ -2,7 +2,7 @@
 # The distribution is freebox-cli (PyPI refuses "fbx" — admin-prohibited name);
 # the command, import package, and MCP identity all remain `fbx`.
 name = "freebox-cli"
-version = "0.7.0"
+version = "0.8.0"
 description = "The Freebox Ultra from the terminal — interactive app, full CLI, and MCP server"
 readme = "README.md"
 requires-python = ">=3.11"
