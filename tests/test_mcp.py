@@ -426,9 +426,50 @@ def test_enroll_happy_path_pairs_and_never_leaks_the_token():
     assert done["status"] == "granted"
     assert "NEW_TOKEN" not in json.dumps(done)
     assert done["permissions_granted"]  # the session check ran
+    # All-granted session (test default): no missing-permissions noise.
+    assert "permissions_missing" not in done
     cred = credentials.load()
     assert cred is not None and cred.app_token == "NEW_TOKEN"
     assert cred.box_model == "fbxgw9-r1"  # identity captured at discovery
+
+
+@respx.mock
+def test_enroll_reports_ungranted_scopes_with_the_escalation_path():
+    # A real ▶-press grant covers fbx's scopes EXCEPT `settings`, which only a
+    # human can tick in Freebox OS. The enroll result must say so up front —
+    # discovering it later as a mysterious write failure is the UX bug.
+    mock_login(permissions={"vm": True, "explorer": True, "downloader": True,
+                            "calls": True, "contacts": True, "settings": False})
+    _mock_authorize_start()
+    _mock_track("granted")
+
+    rt = FbxRuntime()
+    try:
+        rt.call(by_name()["fbx_auth_enroll"], {})
+        done = rt.call(
+            by_name()["fbx_auth_enroll_status"], {"track_id": 42, "wait_seconds": 0}
+        )
+    finally:
+        rt.close()
+
+    assert done["status"] == "granted"
+    assert done["permissions_missing"] == ["settings"]
+    assert "Gestion des accès" in done["grant_hint"]
+
+
+def test_scopes_used_matches_require_permission_call_sites():
+    # SCOPES_USED drives the post-enroll "what's still locked" hint; it must
+    # track what the core actually pre-checks, not what it once did.
+    import re
+    from pathlib import Path
+
+    from fbx.core.auth import SCOPES_USED
+
+    core = Path(__file__).parent.parent / "src" / "fbx" / "core"
+    found = set()
+    for path in core.rglob("*.py"):
+        found |= set(re.findall(r'require_permission\(\s*"([a-z]+)"', path.read_text()))
+    assert found == set(SCOPES_USED)
 
 
 @respx.mock

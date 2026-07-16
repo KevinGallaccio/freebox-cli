@@ -38,6 +38,13 @@ log = logging.getLogger("fbx.auth")
 _AUTHORIZE_POLL_SECONDS = 90
 _AUTHORIZE_POLL_INTERVAL = 1.0
 
+# The scopes fbx's surface actually pre-checks (`require_permission` call
+# sites; a drift-guard test keeps this set honest). The ▶-press default grant
+# covers everything here EXCEPT `settings` — scope escalation is deliberately
+# Freebox-OS-only (admin password), so post-enroll UX must point users there
+# instead of pretending the API could self-grant.
+SCOPES_USED = frozenset({"settings", "vm", "explorer", "downloader", "calls", "contacts"})
+
 
 def sign_challenge(app_token: str, challenge: str) -> str:
     """`password = HMAC-SHA1(app_token, challenge)`, hex-encoded."""

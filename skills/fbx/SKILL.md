@@ -20,9 +20,16 @@ behavior, same shapes.
   flow — `fbx_auth_enroll`, tell them to go press ▶, then
   `fbx_auth_enroll_status` until granted/denied. **Never start pairing
   unprompted**, and never pass `replace=true` unless the user asked to re-pair.
-- Some permissions (notably `settings` and `home`) can only be granted by hand
-  in Freebox OS → Paramètres → Gestion des accès → Applications → fbx. A
-  `missing the X permission` error means the user has to tick a box there.
+- Some permissions (notably `settings`) can only be granted by hand in
+  Freebox OS → Paramètres → Gestion des accès → Applications. **A pairing
+  isn't finished until you've closed this loop**: the enroll result lists
+  `permissions_missing` — when it's non-empty, walk the user through that
+  screen right away (newest fbx entry; `settings` unlocks the router-config
+  writes: Wi-Fi, DHCP, port forwarding), and have them delete older fbx
+  entries while there (each pairing creates a new entry; the old tokens are
+  dead). Frame it honestly: this is their LAST required trip to the web UI —
+  after it, fbx covers the rest. A later `missing the X permission` error
+  means the same checkbox was skipped.
 
 ## The contract
 
