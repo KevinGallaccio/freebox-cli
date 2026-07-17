@@ -75,20 +75,13 @@ class DashboardScreen(BoxScreen):
 
     @staticmethod
     def _menu_options() -> list[Option]:
-        """The navigation entries: title only, one line, a blank line apart.
+        """The navigation entries: the title alone, one line each.
 
         Blurbs wrapped into word soup when inlined (worse in French), so
         they live in the description box under the menu instead — see
-        `on_option_list_option_highlighted`. Textual 8 has no option
-        separators; the spacers are disabled blank options, which keyboard
-        navigation skips.
+        `on_option_list_option_highlighted`.
         """
-        options: list[Option] = []
-        for d in DOMAINS.values():
-            if options:
-                options.append(Option("", disabled=True))
-            options.append(Option(Text(_(d.title), style="bold"), id=d.key))
-        return options
+        return [Option(Text(_(d.title), style="bold"), id=d.key) for d in DOMAINS.values()]
 
     def on_option_list_option_highlighted(
         self, event: OptionList.OptionHighlighted

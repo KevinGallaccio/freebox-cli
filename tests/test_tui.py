@@ -150,7 +150,7 @@ async def test_dashboard_menu_blurb_follows_the_cursor():
         # The first entry is highlighted on mount; its blurb shows unprompted.
         await _settle(pilot, lambda: "live throughput" in blurb())
         app.screen.query_one("#dash-menu", OptionList).focus()
-        await pilot.press("down")  # skips the disabled spacer
+        await pilot.press("down")
         await _settle(pilot, lambda: "WAN, fiber, IPv6, logs" in blurb())
 
 

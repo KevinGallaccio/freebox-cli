@@ -14,7 +14,7 @@
     height: 1fr;
     border: none;
     background: transparent;
-    /* Spaced entries can overflow short terminals; a 1-cell scrollbar
+    /* On very short terminals the menu scrolls; a 1-cell scrollbar
        steals one column instead of two from the 38-cell pane. */
     scrollbar-size-vertical: 1;
 }
