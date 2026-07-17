@@ -13,8 +13,9 @@ from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
 from textual.widgets import DataTable, Footer, Header, Sparkline, Static
 
-from ...cli import fmt
 from ...core.api import connection, system, wifi
+from .. import fmt
+from ..i18n import _
 from ..support import BoxCallError
 from ..widgets import refill
 from ._base import BoxScreen
@@ -37,21 +38,21 @@ class TopScreen(BoxScreen):
         yield Header()
         with Horizontal(id="top-rates"):
             with Vertical(classes="top-rate-pane"):
-                yield Static("↓ down", classes="pane-title")
+                yield Static(_("↓ down"), classes="pane-title")
                 yield Static("…", id="top-down-label")
                 yield Sparkline(list(self._down), id="top-down")
             with Vertical(classes="top-rate-pane"):
-                yield Static("↑ up", classes="pane-title")
+                yield Static(_("↑ up"), classes="pane-title")
                 yield Static("…", id="top-up-label")
                 yield Sparkline(list(self._up), id="top-up")
         yield Static("…", id="top-system", classes="panel")
-        yield Static("Wi-Fi clients", classes="pane-title")
+        yield Static(_("Wi-Fi clients"), classes="pane-title")
         yield DataTable(id="top-stations", cursor_type="row")
         yield Footer()
 
     def on_mount(self) -> None:
         self.query_one("#top-stations", DataTable).add_columns(
-            "Name", "Band", "Signal", "Rate ↓/↑"
+            _("Name"), _("Band"), _("Signal"), _("Rate ↓/↑")
         )
         super().on_mount()
 
@@ -63,11 +64,14 @@ class TopScreen(BoxScreen):
         self._up.append(up)
         self.query_one("#top-down", Sparkline).data = list(self._down)
         self.query_one("#top-up", Sparkline).data = list(self._up)
+        peak = _("(peak {rate})")
         self.query_one("#top-down-label", Static).update(
-            f"[b]{fmt.human_rate(down)}[/b]  (peak {fmt.human_rate(max(self._down))})"
+            f"[b]{fmt.human_rate(down)}[/b]  "
+            + peak.format(rate=fmt.human_rate(max(self._down)))
         )
         self.query_one("#top-up-label", Static).update(
-            f"[b]{fmt.human_rate(up)}[/b]  (peak {fmt.human_rate(max(self._up))})"
+            f"[b]{fmt.human_rate(up)}[/b]  "
+            + peak.format(rate=fmt.human_rate(max(self._up)))
         )
 
         info = await self.box(system.info)
@@ -78,7 +82,8 @@ class TopScreen(BoxScreen):
             f"{f.get('name')} {f.get('value')} rpm" for f in info.get("fans") or []
         )
         self.query_one("#top-system", Static).update(
-            f"{fmt.safe(temps)}\n{fmt.safe(fans)}\nup {fmt.safe(info.get('uptime'))}"
+            f"{fmt.safe(temps)}\n{fmt.safe(fans)}\n"
+            + _("up {uptime}").format(uptime=fmt.safe(info.get("uptime")))
         )
 
         # Stations move slowly; refresh them every 5th tick.

@@ -12,12 +12,12 @@ from textual.containers import Horizontal, Vertical
 from textual.screen import ModalScreen
 from textual.widgets import Button, DataTable, Footer, Header, Static
 
-from ...cli import fmt
 from ...core import cloudinit, vmconsole
 from ...core.api import fs, vm
 from ...core.errors import FbxError
 from ...core.fspath import decode_lenient
-from .. import oslaunch
+from .. import fmt, i18n, oslaunch
+from ..i18n import _, _p
 from ..support import BoxCallError, human_error
 from ..widgets import Field, FormModal, TextModal, cursor_key, refill
 from ._base import BoxScreen
@@ -28,7 +28,7 @@ _PREFLIGHT = (
     "This attaches your terminal to the VM's serial port (its tty) — not a "
     "fresh shell. You may land on a guest login prompt, or on whatever the "
     "console last printed; a sleeping getty may need an Enter to wake up."
-    f"\n\nTo come back to fbx, press {vmconsole.DETACH_HINT}"
+    "\n\nTo come back to fbx, press {detach}"
 )
 
 
@@ -57,6 +57,7 @@ class ConsolePreflightModal(ModalScreen["str | None"]):
         offer_terminal: bool,
     ) -> None:
         super().__init__()
+        i18n.translate_bindings(self)
         self._name = name
         self._credentials = credentials
         self._offer_terminal = offer_terminal
@@ -64,18 +65,22 @@ class ConsolePreflightModal(ModalScreen["str | None"]):
 
     def compose(self) -> ComposeResult:
         with Vertical(id="preflight-box"):
-            yield Static(f"Serial console — {self._name}", id="preflight-title")
-            yield Static(_PREFLIGHT, id="preflight-text")
+            yield Static(
+                _("Serial console — {name}").format(name=self._name), id="preflight-title"
+            )
+            yield Static(
+                _(_PREFLIGHT).format(detach=vmconsole.DETACH_HINT), id="preflight-text"
+            )
             if self._credentials:
                 yield Static(self._cred_text(), id="preflight-creds")
             with Horizontal(id="preflight-buttons"):
-                yield Button("Attach here (a)", variant="primary", id="attach")
+                yield Button(_("Attach here (a)"), variant="primary", id="attach")
                 if self._offer_terminal:
-                    yield Button("New terminal window (t)", id="terminal")
-                yield Button("Cancel (esc)", id="cancel")
+                    yield Button(_("New terminal window (t)"), id="terminal")
+                yield Button(_("Cancel (esc)"), id="cancel")
 
     def _cred_text(self) -> Text:
-        text = Text("Guest credentials (cloud-init): ", style="dim")
+        text = Text(_("Guest credentials (cloud-init): "), style="dim")
         for i, (label, secret) in enumerate(self._credentials):
             if i:
                 text.append("  ")
@@ -86,7 +91,7 @@ class ConsolePreflightModal(ModalScreen["str | None"]):
                 # Fixed-width mask: the length is a secret too.
                 text.append("••••••••", style="dim")
         text.append(
-            "  —  r reveals · p copies the password · u the login",
+            _("  —  r reveals · p copies the password · u the login"),
             style="dim italic",
         )
         return text
@@ -101,17 +106,17 @@ class ConsolePreflightModal(ModalScreen["str | None"]):
         if not self._credentials:
             return
         self.app.copy_to_clipboard(self._credentials[0][1])
-        self.notify("Password copied to the clipboard.")
+        self.notify(_("Password copied to the clipboard."))
 
     def action_copy_login(self) -> None:
         if not self._credentials:
             return
         login = self._credentials[0][0]
         if login == "password":  # the generic label: no username to copy
-            self.notify("cloud-init names no login for this one.", severity="warning")
+            self.notify(_("cloud-init names no login for this one."), severity="warning")
             return
         self.app.copy_to_clipboard(login)
-        self.notify(f"Login {login!r} copied to the clipboard.")
+        self.notify(_("Login {login!r} copied to the clipboard.").format(login=login))
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         choice = event.button.id
@@ -159,7 +164,7 @@ class VmScreen(BoxScreen):
 
     def on_mount(self) -> None:
         self.query_one("#vms", DataTable).add_columns(
-            "Id", "Name", "Status", "vCPUs", "Memory", "Disk"
+            "Id", _("Name"), _("Status"), "vCPUs", _("Memory"), _("Disk")
         )
         super().on_mount()
 
@@ -169,8 +174,12 @@ class VmScreen(BoxScreen):
         total_mem = (info.get("total_memory") or 0) * 1024 * 1024
         used_mem = (info.get("used_memory") or 0) * 1024 * 1024
         self.query_one("#vm-info", Static).update(
-            f"Hypervisor: {info.get('used_cpus', '?')}/{info.get('total_cpus', '?')} vCPUs · "
-            f"{fmt.human_bytes(used_mem)} / {fmt.human_bytes(total_mem)} memory in use"
+            _("Hypervisor: {used}/{total} vCPUs · {used_mem} / {total_mem} memory in use").format(
+                used=info.get("used_cpus", "?"),
+                total=info.get("total_cpus", "?"),
+                used_mem=fmt.human_bytes(used_mem),
+                total_mem=fmt.human_bytes(total_mem),
+            )
         )
 
         # One sorted list feeds BOTH the rows and the key list: refill() zips
@@ -185,7 +194,7 @@ class VmScreen(BoxScreen):
                 (
                     str(v.get("id", "")),
                     str(v.get("name") or ""),
-                    Text(status, style=_STATUS_STYLE.get(status, "yellow")),
+                    Text(_p("vm-status", status), style=_STATUS_STYLE.get(status, "yellow")),
                     str(v.get("vcpus", "")),
                     fmt.human_bytes((v.get("memory") or 0) * 1024 * 1024),
                     decode_lenient(v.get("disk_path")) or "",
@@ -262,24 +271,24 @@ class VmScreen(BoxScreen):
         line1.append(str(item.get("os") or "?"))
         label(line1, "  ·  MAC")
         line1.append(str(item.get("mac") or "—"))
-        label(line1, "  ·  screen (VNC)")
+        label(line1, "  ·  " + _("screen (VNC)"))
         line1.append(
-            "yes — v opens Freebox OS" if item.get("enable_screen") else "no"
+            _("yes — v opens Freebox OS") if item.get("enable_screen") else _("no")
         )
 
         line2 = Text()
-        label(line2, "Disk")
+        label(line2, _("Disk"))
         line2.append(disk or "—")
         if item.get("disk_type"):
             line2.append(f" ({item.get('disk_type')})", style="dim")
         if size is not None:
-            label(line2, "  —  on box")
+            label(line2, "  —  " + _("on box"))
             line2.append(fmt.human_bytes(size))
         if dinfo and dinfo.get("virtual_size") is not None:
-            label(line2, "  ·  virtual")
+            label(line2, "  ·  " + _("virtual"))
             line2.append(fmt.human_bytes(dinfo.get("virtual_size")))
         elif item.get("status") == "running":
-            line2.append("  ·  virtual size unavailable while running", style="dim")
+            line2.append("  ·  " + _("virtual size unavailable while running"), style="dim")
         cd = decode_lenient(item.get("cd_path"))
         if cd:
             label(line2, "  ·  CD")
@@ -288,13 +297,13 @@ class VmScreen(BoxScreen):
         line3 = Text()
         label(line3, "cloud-init")
         if item.get("enable_cloudinit"):
-            line3.append("yes")
+            line3.append(_("yes"))
             if item.get("cloudinit_hostname"):
-                label(line3, " — host")
+                label(line3, " — " + _("host"))
                 line3.append(str(item.get("cloudinit_hostname")))
-            line3.append("  (u shows userdata)", style="dim")
+            line3.append("  " + _("(u shows userdata)"), style="dim")
         else:
-            line3.append("no")
+            line3.append(_("no"))
 
         return Text("\n").join([line1, line2, line3])
 
@@ -309,7 +318,7 @@ class VmScreen(BoxScreen):
             await self.box(vm.start, vm_id)
         except BoxCallError:
             return
-        self.notify(f"Starting {item.get('name') or vm_id}…")
+        self.notify(_("Starting {name}…").format(name=item.get("name") or vm_id))
         self.run_refresh()
 
     @work
@@ -321,7 +330,7 @@ class VmScreen(BoxScreen):
             await self.box(vm.powerbutton, vm_id)
         except BoxCallError:
             return
-        self.notify(f"ACPI shutdown sent to {item.get('name') or vm_id}.")
+        self.notify(_("ACPI shutdown sent to {name}.").format(name=item.get("name") or vm_id))
         self.run_refresh()
 
     @work
@@ -331,16 +340,18 @@ class VmScreen(BoxScreen):
         vm_id, item = sel
         name = item.get("name") or vm_id
         if not await self.confirm(
-            f"Hard-stop VM {name!r}? Like pulling the power cord — the guest "
-            "gets no chance to sync its disks.",
-            confirm_label="Hard stop",
+            _(
+                "Hard-stop VM {name!r}? Like pulling the power cord — the guest "
+                "gets no chance to sync its disks."
+            ).format(name=name),
+            confirm_label=_("Hard stop"),
         ):
             return
         try:
             await self.box(vm.stop, vm_id)
         except BoxCallError:
             return
-        self.notify(f"{name} powered off.", severity="warning")
+        self.notify(_("{name} powered off.").format(name=name), severity="warning")
         self.run_refresh()
 
     @work
@@ -350,16 +361,18 @@ class VmScreen(BoxScreen):
         vm_id, item = sel
         name = item.get("name") or vm_id
         if not await self.confirm(
-            f"Delete the VM definition {name!r}? Its disk file is kept on the "
-            "box, but the VM itself is gone.",
-            confirm_label="Delete VM",
+            _(
+                "Delete the VM definition {name!r}? Its disk file is kept on the "
+                "box, but the VM itself is gone."
+            ).format(name=name),
+            confirm_label=_("Delete VM"),
         ):
             return
         try:
             await self.box(vm.delete, vm_id)
         except BoxCallError:
             return
-        self.notify(f"VM {name} deleted (disk kept).", severity="warning")
+        self.notify(_("VM {name} deleted (disk kept).").format(name=name), severity="warning")
         self.run_refresh()
 
     def action_vnc(self) -> None:
@@ -375,8 +388,10 @@ class VmScreen(BoxScreen):
         name = item.get("name") or vm_id
         if not item.get("enable_screen"):
             self.notify(
-                f"{name} has no screen: enable_screen is off in its config, so "
-                "the box runs it headless (serial console only).",
+                _(
+                    "{name} has no screen: enable_screen is off in its config, so "
+                    "the box runs it headless (serial console only)."
+                ).format(name=name),
                 severity="warning",
                 timeout=8,
             )
@@ -385,7 +400,7 @@ class VmScreen(BoxScreen):
 
         host = self.app.runtime.host or "mafreebox.freebox.fr"
         webbrowser.open(f"http://{host}/#Fbx.os.app.vm.app")
-        self.notify(f"Freebox OS opens in the browser — VMs → {name} → écran.")
+        self.notify(_("Freebox OS opens in the browser — VMs → {name} → écran.").format(name=name))
 
     # -- console / exec / userdata ---------------------------------------------
 
@@ -395,7 +410,7 @@ class VmScreen(BoxScreen):
             return
         vm_id, item = sel
         if item.get("status") != "running":
-            self.notify("The VM must be running to attach its console.", severity="warning")
+            self.notify(_("The VM must be running to attach its console."), severity="warning")
             return
         choice = await self.app.push_screen_wait(
             ConsolePreflightModal(
@@ -406,10 +421,10 @@ class VmScreen(BoxScreen):
         )
         if choice == "terminal":
             if oslaunch.spawn_terminal(["fbx", "vm", "console", str(vm_id)]):
-                self.notify("Console opened in its own window — Ctrl-] there detaches.")
+                self.notify(_("Console opened in its own window — Ctrl-] there detaches."))
             else:
                 self.notify(
-                    "Couldn't open a terminal window — `a` attaches here instead.",
+                    _("Couldn't open a terminal window — `a` attaches here instead."),
                     severity="warning",
                 )
             return
@@ -423,8 +438,10 @@ class VmScreen(BoxScreen):
             # banner an idle console looks like a hang.
             name = item.get("name") or vm_id
             print(
-                f"── {name} · serial console — {vmconsole.DETACH_HINT} returns "
-                "to fbx; Enter wakes an idle prompt.",
+                _(
+                    "── {name} · serial console — {detach} returns "
+                    "to fbx; Enter wakes an idle prompt."
+                ).format(name=name, detach=vmconsole.DETACH_HINT),
                 flush=True,
             )
             try:
@@ -441,18 +458,18 @@ class VmScreen(BoxScreen):
             return
         vm_id, item = sel
         if item.get("status") != "running":
-            self.notify("The VM must be running to run a command.", severity="warning")
+            self.notify(_("The VM must be running to run a command."), severity="warning")
             return
         values = await self.app.push_screen_wait(
             FormModal(
-                f"Run on {item.get('name') or vm_id}'s serial console",
-                [Field("command", "Command", placeholder="uptime")],
-                submit_label="Run",
+                _("Run on {name}'s serial console").format(name=item.get("name") or vm_id),
+                [Field("command", _("Command"), placeholder="uptime")],
+                submit_label=_("Run"),
             )
         )
         if not values or not values["command"]:
             return
-        self.notify("Running (collects until the tty goes quiet)…")
+        self.notify(_("Running (collects until the tty goes quiet)…"))
         try:
             output = await asyncio.to_thread(
                 self.app.runtime.call, vmconsole.run_command, vm_id, values["command"]
@@ -461,7 +478,10 @@ class VmScreen(BoxScreen):
             self.notify(human_error(exc), severity="error", timeout=8)
             return
         await self.app.push_screen_wait(
-            TextModal(f"{item.get('name') or vm_id} — {values['command']}", output or "(no output)")
+            TextModal(
+                f"{item.get('name') or vm_id} — {values['command']}",
+                output or _("(no output)"),
+            )
         )
 
     @work
@@ -473,7 +493,9 @@ class VmScreen(BoxScreen):
             data = await self.box(vm.get, vm_id)
         except BoxCallError:
             return
-        body = data.get("cloudinit_userdata") or "(no cloud-init userdata)"
+        body = data.get("cloudinit_userdata") or _("(no cloud-init userdata)")
         await self.app.push_screen_wait(
-            TextModal(f"{item.get('name') or vm_id} — cloud-init userdata", body)
+            TextModal(
+                _("{name} — cloud-init userdata").format(name=item.get("name") or vm_id), body
+            )
         )

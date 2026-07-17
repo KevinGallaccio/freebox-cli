@@ -8,16 +8,20 @@ from textual.binding import Binding
 from textual.widgets import DataTable, Footer, Header
 
 from ...core.api import contacts
+from ..i18n import _
 from ..support import BoxCallError
 from ..widgets import Field, FormModal, cursor_key, refill
 from ._base import BoxScreen
 
-_FORM_FIELDS = [
-    Field("display_name", "Display name"),
-    Field("first_name", "First name"),
-    Field("last_name", "Last name"),
-    Field("company", "Company"),
-]
+
+def _form_fields() -> list[Field]:
+    # Built per call, not at import: labels must speak the active language.
+    return [
+        Field("display_name", _("Display name")),
+        Field("first_name", _("First name")),
+        Field("last_name", _("Last name")),
+        Field("company", _("Company")),
+    ]
 
 
 class ContactsScreen(BoxScreen):
@@ -41,7 +45,7 @@ class ContactsScreen(BoxScreen):
 
     def on_mount(self) -> None:
         self.query_one("#contacts", DataTable).add_columns(
-            "Name", "First", "Last", "Company"
+            _("Name"), _("First"), _("Last"), _("Company")
         )
         super().on_mount()
 
@@ -75,7 +79,7 @@ class ContactsScreen(BoxScreen):
     @work
     async def action_add(self) -> None:
         values = await self.app.push_screen_wait(
-            FormModal("New contact", _FORM_FIELDS, submit_label="Create")
+            FormModal(_("New contact"), _form_fields(), submit_label=_("Create"))
         )
         if not values or not values["display_name"]:
             return
@@ -83,7 +87,7 @@ class ContactsScreen(BoxScreen):
             await self.box(contacts.create, self._fields_from(values))
         except BoxCallError:
             return
-        self.notify(f"Created contact {values['display_name']!r}.")
+        self.notify(_("Created contact {name!r}.").format(name=values["display_name"]))
         self.run_refresh()
 
     @work
@@ -94,10 +98,10 @@ class ContactsScreen(BoxScreen):
         current = self._by_id.get(contact_id, {})
         values = await self.app.push_screen_wait(
             FormModal(
-                "Edit contact",
+                _("Edit contact"),
                 [
                     Field(f.key, f.label, default=str(current.get(f.key) or ""))
-                    for f in _FORM_FIELDS
+                    for f in _form_fields()
                 ],
             )
         )
@@ -114,8 +118,10 @@ class ContactsScreen(BoxScreen):
         contact_id = cursor_key(self.query_one("#contacts", DataTable))
         if contact_id is None:
             return
-        name = self._by_id.get(contact_id, {}).get("display_name", "this contact")
-        if not await self.confirm(f"Delete contact {name!r}?", confirm_label="Delete"):
+        name = self._by_id.get(contact_id, {}).get("display_name", _("this contact"))
+        if not await self.confirm(
+            _("Delete contact {name!r}?").format(name=name), confirm_label=_("Delete")
+        ):
             return
         try:
             await self.box(contacts.delete, int(contact_id))

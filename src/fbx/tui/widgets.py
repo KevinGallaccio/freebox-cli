@@ -1,4 +1,4 @@
-"""Shared widgets: the confirm gate, a small form modal, table helpers."""
+"""Shared widgets: the confirm gate, form and language modals, table helpers."""
 
 from __future__ import annotations
 
@@ -10,7 +10,11 @@ from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
 from textual.screen import ModalScreen
-from textual.widgets import Button, DataTable, Input, Label, Static
+from textual.widgets import Button, DataTable, Input, Label, OptionList, Static
+from textual.widgets.option_list import Option
+
+from . import i18n
+from .i18n import _
 
 
 class ConfirmModal(ModalScreen[bool]):
@@ -28,6 +32,7 @@ class ConfirmModal(ModalScreen[bool]):
 
     def __init__(self, message: str, *, confirm_label: str = "Confirm") -> None:
         super().__init__()
+        i18n.translate_bindings(self)
         self._message = message
         self._confirm_label = confirm_label
 
@@ -35,8 +40,13 @@ class ConfirmModal(ModalScreen[bool]):
         with Vertical(id="confirm-box"):
             yield Static(self._message, id="confirm-message")
             with Horizontal(id="confirm-buttons"):
-                yield Button("Cancel (n)", id="cancel")
-                yield Button(f"{self._confirm_label} (y)", variant="error", id="confirm")
+                yield Button(_("Cancel (n)"), id="cancel")
+                # Callers pass their label pre-translated; only the default
+                # "Confirm" still needs the catalog (a re-lookup of an
+                # already-French label just misses and passes through).
+                yield Button(
+                    f"{_(self._confirm_label)} (y)", variant="error", id="confirm"
+                )
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         self.dismiss(event.button.id == "confirm")
@@ -67,6 +77,7 @@ class FormModal(ModalScreen["dict[str, str] | None"]):
 
     def __init__(self, title: str, fields: list[Field], *, submit_label: str = "Save") -> None:
         super().__init__()
+        i18n.translate_bindings(self)
         self._title = title
         self._fields = fields
         self._submit_label = submit_label
@@ -78,8 +89,8 @@ class FormModal(ModalScreen["dict[str, str] | None"]):
                 yield Label(f.label)
                 yield Input(value=f.default, placeholder=f.placeholder, id=f"field-{f.key}")
             with Horizontal(id="form-buttons"):
-                yield Button("Cancel (esc)", id="cancel")
-                yield Button(self._submit_label, variant="primary", id="submit")
+                yield Button(_("Cancel (esc)"), id="cancel")
+                yield Button(_(self._submit_label), variant="primary", id="submit")
 
     def _values(self) -> dict[str, str]:
         return {
@@ -109,6 +120,7 @@ class TextModal(ModalScreen[None]):
 
     def __init__(self, title: str, body: str) -> None:
         super().__init__()
+        i18n.translate_bindings(self)
         self._title = title
         self._body = body
 
@@ -121,9 +133,48 @@ class TextModal(ModalScreen[None]):
                 text = Static(id="text-body")
                 text.update(Text(self._body))
                 yield text
-            yield Static("[dim]esc to close[/dim]")
+            yield Static(f"[dim]{_('esc to close')}[/dim]")
 
     def action_dismiss_modal(self) -> None:
+        self.dismiss(None)
+
+
+class LanguageModal(ModalScreen["str | None"]):
+    """Pick the app language; dismisses with an `i18n.LANGUAGES` code or None.
+
+    Language names stay in their own language — the chooser must be readable
+    by someone lost in the wrong one.
+    """
+
+    BINDINGS = [Binding("escape", "cancel", "Cancel", show=False)]
+
+    def __init__(self) -> None:
+        super().__init__()
+        i18n.translate_bindings(self)
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="lang-box"):
+            yield Static(_("Language"), id="lang-title")
+            yield OptionList(
+                *(
+                    Option(
+                        f"{'●' if code == i18n.lang() else '○'} {name}", id=code
+                    )
+                    for code, name in i18n.LANGUAGES.items()
+                ),
+                id="lang-list",
+            )
+            yield Static(f"[dim]{_('esc to close')}[/dim]")
+
+    def on_mount(self) -> None:
+        lang_list = self.query_one("#lang-list", OptionList)
+        lang_list.highlighted = lang_list.get_option_index(i18n.lang())
+        lang_list.focus()
+
+    def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
+        self.dismiss(event.option.id)
+
+    def action_cancel(self) -> None:
         self.dismiss(None)
 
 

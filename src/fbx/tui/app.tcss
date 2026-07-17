@@ -14,6 +14,18 @@
     height: 1fr;
     border: none;
     background: transparent;
+    /* On very short terminals the menu scrolls; a 1-cell scrollbar
+       steals one column instead of two from the 38-cell pane. */
+    scrollbar-size-vertical: 1;
+}
+
+#dash-menu-blurb {
+    /* The highlighted entry's blurb, following the cursor. Fixed height:
+       the box must not jump as one- and two-line blurbs alternate. */
+    height: 4;
+    border: round $primary;
+    padding: 0 1;
+    color: $text-muted;
 }
 
 #dash-tiles-area {
@@ -96,6 +108,26 @@ ConfirmModal {
 
 #confirm-buttons Button {
     margin-left: 2;
+}
+
+/* ---------- language modal ---------- */
+
+LanguageModal {
+    align: center middle;
+}
+
+#lang-box {
+    width: 40;
+    max-width: 90%;
+    height: auto;
+    background: $surface;
+    border: thick $primary;
+    padding: 1 2;
+}
+
+#lang-title {
+    text-style: bold;
+    padding-bottom: 1;
 }
 
 /* ---------- form modal ---------- */

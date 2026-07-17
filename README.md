@@ -48,7 +48,14 @@ La grille s'adapte à la largeur du terminal (2 à 4 colonnes), et le thème
 se choisit dans la palette (`ctrl+p`) et survit au redémarrage, comme le
 reste de vos préférences (`~/.config/fbx/app.toml`).
 
-Dans l'application : une vue `top` en direct (courbes de débit à la
+L'application parle **français** — le vocabulaire de Freebox OS lui-même :
+« Gestion des ports », « Baux statiques », « Journal d'appels », les débits
+en Mo/s… Au premier lancement elle suit la langue du système ; la touche
+`l` sur le tableau de bord bascule entre français et anglais, à chaud, et
+le choix est mémorisé. (La CLI et le serveur MCP restent en anglais : les
+agents IA y sont plus à l'aise.)
+
+Dans l'application : une vue « Activité » en direct (courbes de débit à la
 seconde, températures, signal Wi-Fi par client) ; un **shell de fichiers**
 qui se comporte comme un vrai terminal — invite dans le fil de la sortie,
 **complétion Tab** des commandes et des chemins de la box, historique ↑/↓
@@ -369,7 +376,8 @@ router/NAS/hypervisor of French ISP Free) from the terminal: an
 **interactive app** (just type `fbx`: dashboard, live tiles, adaptive
 layout, persistent freebox themes, a files shell with tab-completion and
 history, a guided VM serial console, contextual suggestions, confirm-gated
-actions), a complete scriptable CLI —
+actions, English or French UI — press `l` on the dashboard; the French
+matches Freebox OS's own terminology), a complete scriptable CLI —
 connection, LAN, DHCP, port forwarding, Wi-Fi, downloads, files, telephony,
 and the undocumented **virtual machine manager** with a WebSocket serial
 console — plus an **MCP server** (111 tools) with a Claude Code plugin and a

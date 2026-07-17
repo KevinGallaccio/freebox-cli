@@ -16,6 +16,7 @@ from textual.widgets import Static
 
 from ... import __version__
 from ..brand import FREE_RED, logo
+from ..i18n import _
 
 
 class SplashScreen(Screen):
@@ -28,7 +29,7 @@ class SplashScreen(Screen):
         with Vertical(id="splash-body"):
             yield Static(logo(), id="splash-art")
             yield Static(title, id="splash-title")
-            yield Static("press any key", id="splash-hint")
+            yield Static(_("press any key"), id="splash-hint")
 
     def on_mount(self) -> None:
         self.set_timer(self.DURATION, self._done)

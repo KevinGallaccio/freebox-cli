@@ -19,8 +19,9 @@ from textual.binding import Binding
 from textual.containers import Horizontal, VerticalScroll
 from textual.widgets import Footer, Header, Input, Label, Static
 
-from ...cli import fmt
 from ...core.api import fs, share
+from .. import fmt
+from ..i18n import _, _n
 from ..support import BoxCallError
 from ._base import BoxScreen
 
@@ -82,7 +83,7 @@ class FsScreen(BoxScreen):
             yield Static(Text(), id="fs-scrollback")
             with Horizontal(id="fs-prompt-line"):
                 yield Label("", id="fs-prompt")
-                yield ShellInput(id="fs-input", placeholder="type `help` for commands")
+                yield ShellInput(id="fs-input", placeholder=_("type `help` for commands"))
         yield Footer()
 
     def on_mount(self) -> None:
@@ -91,7 +92,7 @@ class FsScreen(BoxScreen):
         if isinstance(history, list):
             self._history = [str(line) for line in history][-HISTORY_MAX:]
         self._update_prompt()
-        self._write("The Freebox filesystem. `help` lists commands; Tab completes.")
+        self._write(_("The Freebox filesystem. `help` lists commands; Tab completes."))
         self.query_one("#fs-input", ShellInput).focus()
         super().on_mount()
 
@@ -254,12 +255,12 @@ class FsScreen(BoxScreen):
             try:
                 args = shlex.split(line)
             except ValueError as exc:
-                self._write(f"parse error: {exc}")
+                self._write(_("parse error: {error}").format(error=exc))
                 return
             try:
                 await self._dispatch(args[0], args[1:])
             except BoxCallError as exc:
-                self._write(f"error: {exc}")
+                self._write(_("error: {error}").format(error=exc))
         finally:
             inp.disabled = False
             inp.focus()
@@ -273,7 +274,7 @@ class FsScreen(BoxScreen):
         if is_dir:
             folders, files = e.get("foldercount"), e.get("filecount")
             size = (
-                f"{int(folders) + int(files)} items"
+                _("{n} items").format(n=int(folders) + int(files))
                 if fmt.is_num(folders) and fmt.is_num(files)
                 else ""
             )
@@ -288,7 +289,7 @@ class FsScreen(BoxScreen):
 
     async def _dispatch(self, cmd: str, args: list[str]) -> None:
         if cmd == "help":
-            self._write(_HELP)
+            self._write(_(_HELP))
         elif cmd == "pwd":
             self._write(self.cwd)
         elif cmd == "clear":
@@ -303,17 +304,21 @@ class FsScreen(BoxScreen):
             width = max((len(str(e.get("name") or "?")) for e in entries), default=0) + 2
             for e in entries:
                 self._write(self._ls_line(e, width))
-            self._write(f"{len(entries)} entr{'y' if len(entries) == 1 else 'ies'} in {path}")
+            self._write(
+                _n("{n} entry in {path}", "{n} entries in {path}", len(entries)).format(
+                    n=len(entries), path=path
+                )
+            )
         elif cmd == "tree":
             root = self._abs(args[0]) if args else self.cwd
             self._write(root)
             shown = await self._tree(root, "", TREE_DEPTH, TREE_ENTRIES)
             if shown < 0:
-                self._write(Text("… (truncated)", style="dim"))
+                self._write(Text(_("… (truncated)"), style="dim"))
         elif cmd == "cd":
             if args and args[0] == "-":
                 if self._prev_cwd is None:
-                    self._write("cd: no previous directory")
+                    self._write(_("cd: no previous directory"))
                     return
                 target = self._prev_cwd
             else:
@@ -324,53 +329,57 @@ class FsScreen(BoxScreen):
             self._update_prompt()
         elif cmd == "mkdir":
             if not args:
-                self._write("mkdir: which name?")
+                self._write(_("mkdir: which name?"))
                 return
             await self.box(fs.mkdir, self.cwd, args[0])
             self._ls_cache.clear()
-            self._write(f"created {self._abs(args[0])}")
+            self._write(_("created {path}").format(path=self._abs(args[0])))
         elif cmd in ("mv", "cp"):
             if len(args) != 2:
-                self._write(f"{cmd}: needs SRC and DST")
+                self._write(_("{cmd}: needs SRC and DST").format(cmd=cmd))
                 return
             src, dst = self._abs(args[0]), self._abs(args[1])
             op = fs.move if cmd == "mv" else fs.copy
             task = await self.box(op, [src], dst)
             self._ls_cache.clear()
             task_id = task.get("id") if isinstance(task, dict) else "?"
-            self._write(f"{cmd} started (task {task_id}) — `tasks` shows progress")
+            self._write(
+                _("{cmd} started (task {task}) — `tasks` shows progress").format(
+                    cmd=cmd, task=task_id
+                )
+            )
         elif cmd == "rm":
             if not args:
-                self._write("rm: which path?")
+                self._write(_("rm: which path?"))
                 return
             target = self._abs(args[0])
             if not await self.confirm(
-                f"Delete {target} from the box? This cannot be undone.",
-                confirm_label="Delete",
+                _("Delete {path} from the box? This cannot be undone.").format(path=target),
+                confirm_label=_("Delete"),
             ):
-                self._write("rm: cancelled")
+                self._write(_("rm: cancelled"))
                 return
             task = await self.box(fs.remove, [target])
             self._ls_cache.clear()
             task_id = task.get("id") if isinstance(task, dict) else "?"
-            self._write(f"rm started (task {task_id})")
+            self._write(_("rm started (task {task})").format(task=task_id))
         elif cmd == "share":
             if not args:
-                self._write("share: which path?")
+                self._write(_("share: which path?"))
                 return
             expire = 0
             if len(args) > 1:
                 try:
                     expire = int(time.time()) + int(args[1]) * 86400
                 except ValueError:
-                    self._write("share: DAYS must be a number")
+                    self._write(_("share: DAYS must be a number"))
                     return
             link = await self.box(share.create, self._abs(args[0]), expire=expire)
             self._write(f"→ {link.get('fullurl') or link}")
         elif cmd == "tasks":
             tasks = await self.box(fs.tasks)
             if not tasks:
-                self._write("no file tasks")
+                self._write(_("no file tasks"))
             for t in tasks:
                 pct = t.get("progress")
                 pct_s = f" {pct}%" if pct is not None else ""
@@ -379,7 +388,7 @@ class FsScreen(BoxScreen):
                     f"  {t.get('from') or ''} → {t.get('to') or ''}"
                 )
         else:
-            self._write(f"unknown command {cmd!r} — try `help`")
+            self._write(_("unknown command {cmd!r} — try `help`").format(cmd=cmd))
 
     async def _tree(self, path: str, indent: str, depth: int, budget: int) -> int:
         """Write one directory level; return the remaining budget (<0: truncated)."""

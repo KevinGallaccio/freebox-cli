@@ -30,11 +30,13 @@ class Domain:
     factory: Callable[[], Screen]
 
 
-# Order is the dashboard menu order. Grows as Phase 6 screens land.
+# Order is the dashboard menu order. Menu entries show the title alone;
+# the blurb appears in the description box under the menu as the cursor
+# moves, so it can afford a full sentence's worth of words.
 DOMAINS: dict[str, Domain] = {
     d.key: d
     for d in (
-        Domain("top", "Top", "live throughput and sensors", TopScreen),
+        Domain("top", "Activity", "live throughput and sensors", TopScreen),
         Domain("connection", "Connection", "WAN, fiber, IPv6, logs", ConnectionScreen),
         Domain("wifi", "Wi-Fi", "radios, networks, clients", WifiScreen),
         Domain("lan", "Devices", "who's on the network", LanScreen),

@@ -8,8 +8,9 @@ from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.widgets import DataTable, Footer, Header
 
-from ...cli import fmt
 from ...core.api import downloads
+from .. import fmt
+from ..i18n import _, _p
 from ..support import BoxCallError
 from ..widgets import Field, FormModal, cursor_key, refill
 from ._base import BoxScreen
@@ -45,7 +46,7 @@ class DownloadsScreen(BoxScreen):
 
     def on_mount(self) -> None:
         self.query_one("#tasks", DataTable).add_columns(
-            "Name", "Status", "%", "Size", "Rate", "ETA"
+            _("Name"), _("Status"), "%", _("Size"), _("Rate"), "ETA"
         )
         super().on_mount()
 
@@ -59,7 +60,7 @@ class DownloadsScreen(BoxScreen):
             rows.append(
                 (
                     str(t.get("name") or ""),
-                    Text(status, style=_STATUS_STYLE.get(status, "")),
+                    Text(_p("dl-status", status), style=_STATUS_STYLE.get(status, "")),
                     f"{rx_pct / 100:.0f}%" if rx_pct is not None else "",
                     fmt.human_bytes(t.get("size")),
                     fmt.human_rate(t.get("rx_rate")),
@@ -72,12 +73,12 @@ class DownloadsScreen(BoxScreen):
     async def action_add(self) -> None:
         values = await self.app.push_screen_wait(
             FormModal(
-                "Queue a download",
+                _("Queue a download"),
                 [
-                    Field("url", "URL or magnet link"),
-                    Field("dir", "Download directory (optional)", placeholder="/Freebox/…"),
+                    Field("url", _("URL or magnet link")),
+                    Field("dir", _("Download directory (optional)"), placeholder="/Freebox/…"),
                 ],
-                submit_label="Download",
+                submit_label=_("Download"),
             )
         )
         if not values or not values["url"]:
@@ -88,7 +89,7 @@ class DownloadsScreen(BoxScreen):
             )
         except BoxCallError:
             return
-        self.notify("Download queued.")
+        self.notify(_("Download queued."))
         self.run_refresh()
 
     @work
@@ -110,10 +111,10 @@ class DownloadsScreen(BoxScreen):
         task_id = cursor_key(self.query_one("#tasks", DataTable))
         if task_id is None:
             return
-        name = self._by_id.get(task_id, {}).get("name", "this task")
+        name = self._by_id.get(task_id, {}).get("name", _("this task"))
         if not await self.confirm(
-            f"Remove {name!r} from the list? Downloaded files are kept.",
-            confirm_label="Remove",
+            _("Remove {name!r} from the list? Downloaded files are kept.").format(name=name),
+            confirm_label=_("Remove"),
         ):
             return
         try:
@@ -127,15 +128,17 @@ class DownloadsScreen(BoxScreen):
         task_id = cursor_key(self.query_one("#tasks", DataTable))
         if task_id is None:
             return
-        name = self._by_id.get(task_id, {}).get("name", "this task")
+        name = self._by_id.get(task_id, {}).get("name", _("this task"))
         if not await self.confirm(
-            f"Erase {name!r} AND delete its downloaded files? This cannot be undone.",
-            confirm_label="Erase files",
+            _("Erase {name!r} AND delete its downloaded files? This cannot be undone.").format(
+                name=name
+            ),
+            confirm_label=_("Erase files"),
         ):
             return
         try:
             await self.box(downloads.erase_task, int(task_id))
         except BoxCallError:
             return
-        self.notify("Task and files erased.", severity="warning")
+        self.notify(_("Task and files erased."), severity="warning")
         self.run_refresh()

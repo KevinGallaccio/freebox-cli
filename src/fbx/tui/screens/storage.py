@@ -7,8 +7,9 @@ from textual.binding import Binding
 from textual.containers import VerticalScroll
 from textual.widgets import DataTable, Footer, Header, Static
 
-from ...cli import fmt
 from ...core.api import storage
+from .. import fmt
+from ..i18n import _, _p
 from ..widgets import refill
 from ._base import BoxScreen
 
@@ -21,18 +22,18 @@ class StorageScreen(BoxScreen):
     def compose(self) -> ComposeResult:
         yield Header()
         with VerticalScroll():
-            yield Static("Disks", classes="pane-title")
+            yield Static(_("Disks"), classes="pane-title")
             yield DataTable(id="disks", cursor_type="row")
-            yield Static("Partitions", classes="pane-title")
+            yield Static(_("Partitions"), classes="pane-title")
             yield DataTable(id="partitions", cursor_type="row")
         yield Footer()
 
     def on_mount(self) -> None:
         self.query_one("#disks", DataTable).add_columns(
-            "Id", "Type", "Model", "Size", "Temp", "State"
+            "Id", _("Type"), _("Model"), _("Size"), _("Temp"), _("State")
         )
         self.query_one("#partitions", DataTable).add_columns(
-            "Id", "Label", "Used", "Total", "Use%", "Free"
+            "Id", _("Label"), _("Used"), _("Total"), _("Use%"), _("Free")
         )
         super().on_mount()
 
@@ -47,7 +48,7 @@ class StorageScreen(BoxScreen):
                     str(d.get("model") or ""),
                     fmt.human_bytes(d.get("total_bytes")),
                     f"{d.get('temp')}°C" if d.get("temp") is not None else "",
-                    str(d.get("state") or ""),
+                    _p("disk-state", str(d.get("state") or "")),
                 )
                 for d in disks
             ],
