@@ -63,6 +63,7 @@ class DashboardScreen(BoxScreen):
             with Vertical(id="dash-menu-pane"):
                 yield Static(_("Go to"), classes="pane-title")
                 yield OptionList(*self._menu_options(), id="dash-menu")
+                yield Static("", id="dash-menu-blurb")
             with Container(id="dash-tiles-area"):
                 with Grid(id="dash-tiles"):
                     for tile in _TILES:
@@ -74,28 +75,31 @@ class DashboardScreen(BoxScreen):
 
     @staticmethod
     def _menu_options() -> list[Option]:
-        """The navigation entries, styled and spaced to read as entries.
+        """The navigation entries: title only, one line, a blank line apart.
 
-        Most wrap in the 38-cell pane (worse in French), and uniformly
-        styled, tightly packed lines read as one word soup: so bold title +
-        dim blurb (a dim continuation visibly belongs to the bold line
-        above), and a blank line between entries. Textual 8 has no option
-        separators — the spacers are disabled blank options, which keyboard
+        Blurbs wrapped into word soup when inlined (worse in French), so
+        they live in the description box under the menu instead — see
+        `on_option_list_option_highlighted`. Textual 8 has no option
+        separators; the spacers are disabled blank options, which keyboard
         navigation skips.
         """
         options: list[Option] = []
         for d in DOMAINS.values():
             if options:
                 options.append(Option("", disabled=True))
-            options.append(
-                Option(
-                    Text.assemble(
-                        (_(d.title), "bold"), (" — ", "dim"), (_(d.blurb), "dim")
-                    ),
-                    id=d.key,
-                )
-            )
+            options.append(Option(Text(_(d.title), style="bold"), id=d.key))
         return options
+
+    def on_option_list_option_highlighted(
+        self, event: OptionList.OptionHighlighted
+    ) -> None:
+        # The menu's tooltip-of-sorts: the highlighted entry's blurb, in the
+        # box under the menu, following the cursor.
+        if event.option_list.id != "dash-menu":
+            return
+        domain = DOMAINS.get(event.option.id or "")
+        if domain:
+            self.query_one("#dash-menu-blurb", Static).update(_(domain.blurb))
 
     # -- data ---------------------------------------------------------------
 

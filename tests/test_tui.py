@@ -139,6 +139,21 @@ async def test_dashboard_menu_opens_domain_screen():
         await _settle(pilot, lambda: bool(app.screen.query("#tile-connection")))
 
 
+@pytest.mark.anyio
+@respx.mock
+async def test_dashboard_menu_blurb_follows_the_cursor():
+    authorize()
+    _mock_dashboard_box()
+    app = FbxApp(splash=False)
+    async with app.run_test(size=(120, 40)) as pilot:
+        blurb = lambda: str(app.screen.query_one("#dash-menu-blurb", Static).content)  # noqa: E731
+        # The first entry is highlighted on mount; its blurb shows unprompted.
+        await _settle(pilot, lambda: "live throughput" in blurb())
+        app.screen.query_one("#dash-menu", OptionList).focus()
+        await pilot.press("down")  # skips the disabled spacer
+        await _settle(pilot, lambda: "WAN, fiber, IPv6, logs" in blurb())
+
+
 # -- confirm-gated writes -------------------------------------------------------
 
 

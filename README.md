@@ -55,7 +55,7 @@ en Mo/s… Au premier lancement elle suit la langue du système ; la touche
 le choix est mémorisé. (La CLI et le serveur MCP restent en anglais : les
 agents IA y sont plus à l'aise.)
 
-Dans l'application : une vue `top` en direct (courbes de débit à la
+Dans l'application : une vue « Activité » en direct (courbes de débit à la
 seconde, températures, signal Wi-Fi par client) ; un **shell de fichiers**
 qui se comporte comme un vrai terminal — invite dans le fil de la sortie,
 **complétion Tab** des commandes et des chemins de la box, historique ↑/↓

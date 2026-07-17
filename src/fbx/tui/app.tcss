@@ -19,6 +19,15 @@
     scrollbar-size-vertical: 1;
 }
 
+#dash-menu-blurb {
+    /* The highlighted entry's blurb, following the cursor. Fixed height:
+       the box must not jump as one- and two-line blurbs alternate. */
+    height: 4;
+    border: round $primary;
+    padding: 0 1;
+    color: $text-muted;
+}
+
 #dash-tiles-area {
     width: 1fr;
     height: 1fr;
