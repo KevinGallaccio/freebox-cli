@@ -11,10 +11,12 @@ from __future__ import annotations
 
 import inspect
 import json
+from contextlib import asynccontextmanager
 
 import pytest
 import respx
 
+from fbx import __version__
 from fbx.core import vmconsole
 from fbx.core.api import (
     calls,
@@ -542,11 +544,39 @@ def anyio_backend():
     return "asyncio"
 
 
+def _is_error(result) -> bool:
+    return result.model_dump(by_alias=True)["isError"]
+
+
+@asynccontextmanager
+async def _connected_session(server):
+    """A ClientSession talking to `server` over in-memory streams.
+
+    mcp 1.x ships this as `create_connected_server_and_client_session`; 2.x
+    dropped it but kept the stream pair, so this is the few lines that work on
+    both majors.
+    """
+    import anyio
+    from mcp import ClientSession
+    from mcp.shared.memory import create_client_server_memory_streams
+
+    async with create_client_server_memory_streams() as (client_streams, server_streams):
+        client_read, client_write = client_streams
+        server_read, server_write = server_streams
+        async with anyio.create_task_group() as tg:
+            options = server.create_initialization_options()
+            tg.start_soon(lambda: server.run(server_read, server_write, options))
+            try:
+                async with ClientSession(client_read, client_write) as session:
+                    await session.initialize()
+                    yield session
+            finally:
+                tg.cancel_scope.cancel()
+
+
 @pytest.mark.anyio
 @respx.mock
 async def test_mcp_protocol_list_and_call():
-    from mcp.shared.memory import create_connected_server_and_client_session
-
     from fbx.mcp.server import build_server
 
     authorize()
@@ -556,16 +586,16 @@ async def test_mcp_protocol_list_and_call():
     rt = FbxRuntime()
     server = build_server(rt, select())
     try:
-        async with create_connected_server_and_client_session(server) as session:
+        async with _connected_session(server) as session:
             listed = await session.list_tools()
             assert len(listed.tools) == 111
-            tools = {t.name: t for t in listed.tools}
-            assert tools["fbx_system_info"].annotations.readOnlyHint is True
-            assert tools["fbx_system_reboot"].annotations.destructiveHint is True
-            assert tools["fbx_fs_ls"].inputSchema["properties"]["path"]["type"] == "string"
+            tools = {t.name: t.model_dump(by_alias=True) for t in listed.tools}
+            assert tools["fbx_system_info"]["annotations"]["readOnlyHint"] is True
+            assert tools["fbx_system_reboot"]["annotations"]["destructiveHint"] is True
+            assert tools["fbx_fs_ls"]["inputSchema"]["properties"]["path"]["type"] == "string"
 
             result = await session.call_tool("fbx_system_info", {})
-            assert result.isError is False
+            assert _is_error(result) is False
             payload = json.loads(result.content[0].text)
             assert payload["firmware_version"] == "4.12.2"
     finally:
@@ -575,8 +605,6 @@ async def test_mcp_protocol_list_and_call():
 @pytest.mark.anyio
 @respx.mock
 async def test_mcp_protocol_maps_errors_to_tool_errors():
-    from mcp.shared.memory import create_connected_server_and_client_session
-
     from fbx.mcp.server import build_server
 
     # No credential stored: the call must fail with pairing instructions, and
@@ -584,9 +612,9 @@ async def test_mcp_protocol_maps_errors_to_tool_errors():
     rt = FbxRuntime()
     server = build_server(rt, select())
     try:
-        async with create_connected_server_and_client_session(server) as session:
+        async with _connected_session(server) as session:
             result = await session.call_tool("fbx_system_info", {})
-            assert result.isError is True
+            assert _is_error(result) is True
             assert "fbx auth login" in result.content[0].text
     finally:
         rt.close()
@@ -595,8 +623,6 @@ async def test_mcp_protocol_maps_errors_to_tool_errors():
 @pytest.mark.anyio
 @respx.mock
 async def test_mcp_protocol_bodiless_write_returns_success_object():
-    from mcp.shared.memory import create_connected_server_and_client_session
-
     from fbx.mcp.server import build_server
 
     authorize()
@@ -606,9 +632,9 @@ async def test_mcp_protocol_bodiless_write_returns_success_object():
     rt = FbxRuntime()
     server = build_server(rt, select())
     try:
-        async with create_connected_server_and_client_session(server) as session:
+        async with _connected_session(server) as session:
             result = await session.call_tool("fbx_vm_start", {"vm_id": 1})
-            assert result.isError is False
+            assert _is_error(result) is False
             assert json.loads(result.content[0].text) == {"success": True}
     finally:
         rt.close()
@@ -616,14 +642,12 @@ async def test_mcp_protocol_bodiless_write_returns_success_object():
 
 @pytest.mark.anyio
 async def test_mcp_read_only_server_hides_writes():
-    from mcp.shared.memory import create_connected_server_and_client_session
-
     from fbx.mcp.server import build_server
 
     rt = FbxRuntime()
     server = build_server(rt, select(read_only=True))
     try:
-        async with create_connected_server_and_client_session(server) as session:
+        async with _connected_session(server) as session:
             listed = await session.list_tools()
             names = {t.name for t in listed.tools}
             assert "fbx_system_info" in names
@@ -631,7 +655,7 @@ async def test_mcp_read_only_server_hides_writes():
             assert "fbx_api_request" not in names
             # Calling a hidden tool fails without touching the box.
             result = await session.call_tool("fbx_system_reboot", {})
-            assert result.isError is True
+            assert _is_error(result) is True
     finally:
         rt.close()
 
@@ -738,3 +762,60 @@ def test_cli_mcp_install_json_shape():
     assert opencode["enabled"] is True
     assert opencode["command"][-2:] == ["mcp", "serve"]
     assert "args" not in opencode
+
+
+# --- the server itself, end to end over stdio ------------------------------
+#
+# Regression for the mcp 2.x crash (`'Server' object has no attribute
+# 'list_tools'`): spawn `fbx mcp serve` as a real subprocess and speak the
+# protocol to it with whichever mcp SDK is installed. Nothing here touches the
+# box — an unknown tool never reaches the runtime.
+
+
+def _serve_in_subprocess(config_home):
+    """`fbx mcp serve` with the credential store pointed at an empty dir."""
+    import os
+    import sys
+
+    from mcp import StdioServerParameters
+
+    env = dict(os.environ, XDG_CONFIG_HOME=str(config_home))
+    return StdioServerParameters(
+        command=sys.executable,
+        args=["-c", "from fbx.mcp.server import serve; serve()"],
+        env=env,
+    )
+
+
+async def _initialize_list_call(config_home):
+    from mcp import ClientSession
+    from mcp.client.stdio import stdio_client
+
+    async with stdio_client(_serve_in_subprocess(config_home)) as (read, write):
+        async with ClientSession(read, write) as session:
+            init = await session.initialize()
+            listed = await session.list_tools()
+            called = await session.call_tool("fbx_no_such_tool", {})
+            return init, listed, called
+
+
+def test_server_speaks_the_protocol_over_stdio_with_the_installed_mcp_sdk(tmp_path):
+    import anyio
+
+    init, listed, called = anyio.run(_initialize_list_call, tmp_path)
+
+    # 2.x renamed model fields to snake_case; dumping by alias is the same on both.
+    server_info = init.model_dump(by_alias=True)["serverInfo"]
+    assert server_info["name"] == "fbx"
+    assert server_info["version"] == __version__
+
+    names = {tool.name for tool in listed.tools}
+    assert names == {spec.name for spec in TOOLS}
+    # Annotations survive the trip on both SDK majors (camelCase on the wire).
+    by_tool = {tool.name: tool.model_dump(by_alias=True) for tool in listed.tools}
+    assert by_tool["fbx_system_info"]["annotations"]["readOnlyHint"] is True
+
+    # An unknown tool is a tool error the model can read, not a protocol error.
+    called = called.model_dump(by_alias=True)
+    assert called["isError"] is True
+    assert "unknown tool: fbx_no_such_tool" in called["content"][0]["text"]

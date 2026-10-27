@@ -13,6 +13,10 @@ jobs:
       matrix:
         # Oldest supported and newest stable.
         python-version: ["3.11", "3.13"]
+        # The low-level Server API differs between mcp 1.x and 2.x; the
+        # server supports both, so both must stay green (uvx resolves to 2.x).
+        mcp: ["<2", ">=2,<3"]
+    name: py${{ matrix.python-version }} · mcp${{ matrix.mcp }}
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v8.3.2
@@ -20,6 +24,8 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install
         run: uv sync
+      - name: Pin the mcp SDK major under test
+        run: uv pip install "mcp${{ matrix.mcp }}"
       - name: Lint
         run: uv run ruff check src tests scripts
       - name: Test (offline — the box is respx-mocked)
