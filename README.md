@@ -242,8 +242,9 @@ Claude Code :
 /plugin install fbx@fbx
 ```
 
-Le plugin lance le serveur via `uvx` **depuis sa propre copie du code** :
-mettre à jour le plugin met à jour le serveur, rien d'autre à rafraîchir :
+Le plugin lance le serveur via `uvx` en épinglant **la version exacte de la
+release** sur PyPI : mettre à jour le plugin met à jour le serveur, rien
+d'autre à rafraîchir :
 
 ```
 /plugin marketplace update fbx
