@@ -2,7 +2,7 @@
 # The distribution is freebox-cli (PyPI refuses "fbx" — admin-prohibited name);
 # the command, import package, and MCP identity all remain `fbx`.
 name = "freebox-cli"
-version = "0.8.0"
+version = "0.8.1"
 description = "The Freebox Ultra from the terminal — interactive app, full CLI, and MCP server"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -41,7 +41,7 @@ Changelog = "https://github.com/KevinGallaccio/freebox-cli/releases"
 
 [project.optional-dependencies]
 keyring = ["keyring>=25"]
-mcp = ["mcp>=1.2"]
+mcp = ["mcp>=1.2,<3"]
 
 [project.scripts]
 fbx = "fbx.cli.main:main"
@@ -63,7 +63,7 @@ dev = [
     "ruff>=0.5",
     # The MCP server is an optional extra for users ([project.optional-dependencies]
     # mcp) but always present in dev so its tests run.
-    "mcp>=1.2",
+    "mcp>=1.2,<3",
 ]
 
 [tool.ruff]

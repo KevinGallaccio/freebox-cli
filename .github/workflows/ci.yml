@@ -22,5 +22,15 @@ jobs:
         run: uv sync
       - name: Lint
         run: uv run ruff check src tests scripts
-      - name: Test (offline — the box is respx-mocked)
-        run: uv run pytest
+      # The low-level Server API differs between mcp 1.x and 2.x; the server
+      # supports both, so the suite runs once per major (uvx resolves to 2.x).
+      # Two steps rather than a matrix axis so the job names stay
+      # `test (3.11)` / `test (3.13)`, which main's ruleset requires.
+      - name: Test against mcp 1.x (offline — the box is respx-mocked)
+        run: |
+          uv pip install "mcp<2"
+          uv run --no-sync pytest
+      - name: Test against mcp 2.x
+        run: |
+          uv pip install "mcp>=2,<3"
+          uv run --no-sync pytest
